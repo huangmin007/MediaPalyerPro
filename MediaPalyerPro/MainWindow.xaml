@@ -60,7 +60,7 @@
             RenderOptions.BitmapScalingMode="HighQuality"
             />
         
-        <Canvas x:Name="BackgroundCanvas" >
+        <Canvas x:Name="BackgroundCanvas" Visibility="{Binding Visibility, ElementName=Background}" >
         </Canvas>
 
         <sttplay:WPFSCPlayerPro
@@ -76,9 +76,9 @@
             onFirstFrameRenderEvent="OnFirstFrameRenderEventHandler"
             />
 
-        <Canvas x:Name="PlayerCanvas">
+        <Canvas x:Name="PlayerCanvas" Visibility="{Binding Visibility, ElementName=Player}">
             <!--
-            <Button Name="Btn_2" Width="100" Height="100" FontSize="50" Margin="150,150">
+            <Button Name="Btn_00" Width="100" Height="100" FontSize="50" Margin="150,150">
                 <Button.Background>
                     <ImageBrush ImageSource="D:\Documents\WXWork\1688849995458235\Cache\Image\2021-03\218b8b85-f89e-4b23-a913-a5e030d21f6f.jpg"/>
                 </Button.Background>

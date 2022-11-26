@@ -209,10 +209,11 @@ namespace MediaPalyerPro
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             //Create Instance
-            Modbus.Device.IModbusMaster ModbusLMS = InstanceExtension.CreateNModbus4Master("Modbus.Master.LMS");
             Modbus.Device.IModbusMaster ModbusDIO = InstanceExtension.CreateNModbus4Master("Modbus.Master.DIO");
-            if (ModbusLMS != null) AccessObjects.TryAdd("Modbus.Master.LMS", ModbusLMS);
             if (ModbusDIO != null) AccessObjects.TryAdd("Modbus.Master.DIO", ModbusDIO);
+            System.IO.Ports.SerialPort SerialPort = InstanceExtension.CreateSerialPort("Serial.PortName", null);
+            if (SerialPort != null) AccessObjects.TryAdd("Serial.PortName", SerialPort);
+
             //Create Instance
             HPSocket.IServer NetworkServer = InstanceExtension.CreateNetworkServer("Network.Server");
             HPSocket.IClient NetworkClient = InstanceExtension.CreateNetworkClient("Network.Client");
@@ -231,7 +232,7 @@ namespace MediaPalyerPro
             ConfigurationBackground("Background.Image");
 
             //VideoPlayer
-            //InstanceExtension.ChangeInstancePropertyValue(Player, "Player.");
+            InstanceExtension.ChangeInstancePropertyValue(Player, "Player.");
             if (!String.IsNullOrWhiteSpace(Player.Url) && File.Exists(Player.Url))
             {
                 OpenMediaFile(Player, Player.Url);
@@ -239,7 +240,7 @@ namespace MediaPalyerPro
             else
             {
                 //读取并播放列表文件
-                String fileName = "MediaPlayList.Config";
+                String fileName = "MediaPages.Config";
                 if (!File.Exists(fileName)) return;
 
                 try
@@ -315,23 +316,29 @@ namespace MediaPalyerPro
             try
             {
                 BackgroundCanvas.Children.Clear();
-                foreach (XElement button in item.Element(BackgroundCanvas.Name)?.Elements("Button"))
+                if (item.Element(BackgroundCanvas.Name) != null)
                 {
-                    StringReader stringReader = new StringReader(button.ToString());
-                    XmlReader xmlReader = XmlReader.Create(stringReader, settings, context);
-                    XamlXmlReader xamlXmlReader = new XamlXmlReader(xmlReader, xamlXmlReaderSettings);
-                    Button element = (Button)System.Windows.Markup.XamlReader.Load(xamlXmlReader);
-                    BackgroundCanvas.Children.Add(element);
+                    foreach (XElement element in item.Element(BackgroundCanvas.Name)?.Elements("Button"))
+                    {
+                        StringReader stringReader = new StringReader(element.ToString());
+                        XmlReader xmlReader = XmlReader.Create(stringReader, settings, context);
+                        XamlXmlReader xamlXmlReader = new XamlXmlReader(xmlReader, xamlXmlReaderSettings);
+                        UIElement uiElement = (UIElement)System.Windows.Markup.XamlReader.Load(xamlXmlReader);
+                        BackgroundCanvas.Children.Add(uiElement);
+                    }
                 }
 
                 PlayerCanvas.Children.Clear();
-                foreach (XElement button in item.Element(PlayerCanvas.Name)?.Elements("Button"))
+                if (item.Element(PlayerCanvas.Name) != null)
                 {
-                    StringReader stringReader = new StringReader(button.ToString());
-                    XmlReader xmlReader = XmlReader.Create(stringReader, settings, context);
-                    XamlXmlReader xamlXmlReader = new XamlXmlReader(xmlReader, xamlXmlReaderSettings);
-                    Button element = (Button)System.Windows.Markup.XamlReader.Load(xamlXmlReader);
-                    PlayerCanvas.Children.Add(element);
+                    foreach (XElement element in item.Element(PlayerCanvas.Name)?.Elements("Button"))
+                    {
+                        StringReader stringReader = new StringReader(element.ToString());
+                        XmlReader xmlReader = XmlReader.Create(stringReader, settings, context);
+                        XamlXmlReader xamlXmlReader = new XamlXmlReader(xmlReader, xamlXmlReaderSettings);
+                        UIElement uiElement = (UIElement)System.Windows.Markup.XamlReader.Load(xamlXmlReader);
+                        PlayerCanvas.Children.Add(uiElement);
+                    }
                 }
             }
             catch(Exception ex)
@@ -705,6 +712,9 @@ namespace MediaPalyerPro
         {
             Button button = (Button)sender;
             Console.WriteLine(button.Name);
+            Console.WriteLine(button.Parent.GetValue(NameProperty));
+            
+            
         }
     }
 }
