@@ -1,0 +1,93 @@
+﻿<Window x:Class="MediaPalyerPro.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:MediaPalyerPro"
+        xmlns:sttplay="clr-namespace:Sttplay.MediaPlayer"
+        mc:Ignorable="d"
+        Title="Meida Player" Height="450" Width="800" Background="#00FFFFFF" Loaded="Window_Loaded">
+    <Window.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Background" Value="#640000FF"/>
+            <Setter Property="Foreground" Value="#6400FF00"/>
+            <EventSetter Event="Click" Handler="Button_Click"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">                        
+                        <Grid>
+                            <Border x:Name="foreground" Width="{TemplateBinding Width}" Height="{TemplateBinding Height}" Background="{TemplateBinding Foreground}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" SnapsToDevicePixels="True">
+                                <Border.Effect>
+                                    <DropShadowEffect x:Name="foreground_dropEffect" Color="#CB323232" BlurRadius="8" Opacity="0.6"/>
+                                </Border.Effect>
+                            </Border>
+                            <Border x:Name="background" Visibility="Hidden" Width="{TemplateBinding Width}" Height="{TemplateBinding Height}" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" SnapsToDevicePixels="True">
+                                <Border.Effect>
+                                    <DropShadowEffect x:Name="background_dropEffect" Color="#CB323232" BlurRadius="8" Opacity="0.6"/>
+                                </Border.Effect>
+                            </Border>                            
+                        </Grid>                        
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsDefault" Value="True">
+                                <Setter TargetName="foreground" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="background" Property="Visibility" Value="Hidden"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="foreground" Property="Opacity" Value="0.8"/>
+                                <Setter TargetName="foreground" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="background" Property="Visibility" Value="Hidden"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="foreground" Property="Visibility" Value="Hidden"/>
+                                <Setter TargetName="background" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        
+    </Window.Resources>
+    
+    <Grid>
+        <Viewbox/>
+        <sttplay:WPFSCPlayerPro 
+            x:Name="Background" 
+            Stretch="Uniform" 
+            UseLayoutRounding="True"
+            RenderOptions.BitmapScalingMode="HighQuality"
+            />
+        
+        <Canvas x:Name="BackgroundCanvas" >
+        </Canvas>
+
+        <sttplay:WPFSCPlayerPro
+            x:Name="Player" 
+            Stretch="Uniform" 
+            UseLayoutRounding="True"
+            RenderOptions.BitmapScalingMode="HighQuality"
+            IsVisibleChanged="Player_IsVisibleChanged"
+            
+            onCaptureOpenCallbackEvent="OnCaptureOpenCallbackEvent"
+            onRenderFrameEvent="OnRenderFrameEventHandler"
+            onStreamFinishedEvent="OnStreamFinishedEventHandler"
+            onFirstFrameRenderEvent="OnFirstFrameRenderEventHandler"
+            />
+
+        <Canvas x:Name="PlayerCanvas">
+            <!--
+            <Button Name="Btn_2" Width="100" Height="100" FontSize="50" Margin="150,150">
+                <Button.Background>
+                    <ImageBrush ImageSource="D:\Documents\WXWork\1688849995458235\Cache\Image\2021-03\218b8b85-f89e-4b23-a913-a5e030d21f6f.jpg"/>
+                </Button.Background>
+                <Button.Foreground>
+                    <ImageBrush ImageSource="D:\Documents\WXWork\1688849995458235\Cache\Image\2021-03\257fc851-7e08-4281-8afa-8054c3980fba.png"/>
+                </Button.Foreground>
+            </Button>
+            -->
+        </Canvas>
+
+    </Grid>
+</Window>
