@@ -28,7 +28,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>x64</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
@@ -67,6 +67,9 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="MainWindow_NetwordSync.cs" />
+    <Compile Include="MainWindow_OnDragEnter.cs" />
+    <Compile Include="MainWindow_Timer.cs" />
     <Compile Include="SCPlayerPro\Dispatcher.cs" />
     <Compile Include="SCPlayerPro\MiniThreadPool.cs" />
     <Compile Include="SCPlayerPro\Renderer\IXRenderer.cs" />
@@ -80,6 +83,9 @@
     <Compile Include="SCPlayerPro\SCMGR.cs" />
     <Compile Include="SCPlayerPro\SCPlayerPro.cs" />
     <Compile Include="SCPlayerPro\WPFSCPlayerPro.cs" />
+    <Compile Include="SpaceCG\Controls\ListBoxAppender.cs" />
+    <Compile Include="SpaceCG\Controls\LoggerWindow.cs" />
+    <Compile Include="SpaceCG\Controls\TextBoxAppender.cs" />
     <Compile Include="SpaceCG\Generic\HPSocketExtension.cs" />
     <Compile Include="SpaceCG\Generic\InstanceExtension.cs" />
     <Compile Include="SpaceCG\Generic\NetworkExtension.cs" />
@@ -88,6 +94,26 @@
     <Compile Include="SpaceCG\Generic\SerialPortExtension.cs" />
     <Compile Include="SpaceCG\Generic\StringExtension.cs" />
     <Compile Include="SpaceCG\Module\ModbusDeviceManager.cs" />
+    <Compile Include="SpaceCG\WindowsAPI\API_Template.cs" />
+    <Compile Include="SpaceCG\WindowsAPI\User32\DeviceNotification.cs" />
+    <Compile Include="SpaceCG\WindowsAPI\User32\DeviceNotificationExample.cs" />
+    <Compile Include="SpaceCG\WindowsAPI\User32\DPI.cs" />
+    <Compile Include="SpaceCG\WindowsAPI\User32\GetInputState.cs" />
+    <Compile Include="SpaceCG\WindowsAPI\User32\HookEx.cs" />
+    <Compile Include="SpaceCG\WindowsAPI\User32\HookExExample.cs" />
+    <Compile Include="SpaceCG\WindowsAPI\User32\HotKey.cs" />
+    <Compile Include="SpaceCG\WindowsAPI\User32\HotKeyExample.cs" />
+    <Compile Include="SpaceCG\WindowsAPI\User32\PointerInput.cs" />
+    <Compile Include="SpaceCG\WindowsAPI\User32\SendInput.cs" />
+    <Compile Include="SpaceCG\WindowsAPI\User32\ShutdownBlockReason.cs" />
+    <Compile Include="SpaceCG\WindowsAPI\User32\User32.cs" />
+    <Compile Include="SpaceCG\WindowsAPI\User32\VirtualKeyCodes.cs" />
+    <Compile Include="SpaceCG\WindowsAPI\User32\WindowAnimate.cs" />
+    <Compile Include="SpaceCG\WindowsAPI\User32\WindowControl.cs" />
+    <Compile Include="SpaceCG\WindowsAPI\User32\WindowMessage.cs" />
+    <Compile Include="SpaceCG\WindowsAPI\User32\WindowMessageType.cs" />
+    <Compile Include="SpaceCG\WindowsAPI\User32\WindowRect.cs" />
+    <Compile Include="SpaceCG\WindowsAPI\WinDef.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -128,9 +154,10 @@
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
-    <None Include="MediaPages.Config">
+    <None Include="MediaItems.Config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="SpaceCG\WindowsAPI\README.md" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.Config" />

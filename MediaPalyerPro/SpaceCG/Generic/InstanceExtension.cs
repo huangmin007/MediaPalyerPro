@@ -221,19 +221,19 @@ namespace SpaceCG.Generic
                         continue;
                     }
 
-                    //Console.WriteLine($"Convert Type:: {_parameters[i].GetType()} / {pInfo.ParameterType}  IsValueType:{pInfo.ParameterType.IsValueType}  IsArray:{pInfo.ParameterType.IsArray}");
+                    //Console.WriteLine($"Convert Type:: {_parameters[i].GetType()} / {pInfo.ParameterType}  IsValueType:{pInfo.ParameterType.IsValueType}  IsArray:{pInfo.ParameterType.IsArray}  IsEnum:{pInfo.ParameterType.IsEnum}");
 
-                    if(pInfo.ParameterType.IsValueType)
+                    if (pInfo.ParameterType.IsEnum)
+                    {
+                        arguments[i] = Enum.Parse(pInfo.ParameterType, _parameters[i].ToString(), true);
+                    }
+                    else if (pInfo.ParameterType.IsValueType)
                     {
                         arguments[i] = StringExtension.ConvertValueTypeParameters(_parameters[i], pInfo.ParameterType);
                     }
                     else if (pInfo.ParameterType.IsArray)
                     {
                         arguments[i] = StringExtension.ConvertArrayParameters((String[])_parameters[i], pInfo.ParameterType);
-                    }
-                    else if (pInfo.ParameterType.IsEnum)
-                    {
-                        arguments[i] = Enum.Parse(pInfo.ParameterType, _parameters[i].ToString(), true);
                     }
                     else
                     {
