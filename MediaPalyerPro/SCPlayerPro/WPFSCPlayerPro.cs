@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
@@ -342,7 +343,6 @@ namespace Sttplay.MediaPlayer
             MediaPlayer.Dispatcher.WakeAll();
             if (core == null) return;
             core.Volume = Volume;
-
         }
 
         /// <summary>
@@ -457,6 +457,13 @@ namespace Sttplay.MediaPlayer
             if (core == null) return;
             this.Loop = loop;
             core.SetLoop(loop);
+        }
+
+        public void SetVolume(float volume)
+        {
+            if (core == null) return;
+            this.Volume = volume;
+            core.Volume = Volume;
         }
 
         /// <summary>

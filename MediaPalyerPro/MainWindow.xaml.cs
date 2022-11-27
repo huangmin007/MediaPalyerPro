@@ -18,6 +18,7 @@ using System.Text;
 using HPSocket;
 using SpaceCG.Generic;
 using SpaceCG.Log4Net.Controls;
+using System.Windows.Media;
 
 namespace MediaPalyerPro
 {
@@ -240,6 +241,8 @@ namespace MediaPalyerPro
         /// <param name="fileName"></param>
         public void LoadConfig(String fileName)
         {
+            //ImageSource im = new ImageSource();
+
             if (!File.Exists(fileName)) return;
 
             try
@@ -310,8 +313,10 @@ namespace MediaPalyerPro
             foreach (FrameworkElement uiElement in BackgroundButtons.Children)
                 BackgroundButtons.UnregisterName(uiElement.Name);
 
-            Player.Close();
-            Background.Close();
+            //Player.Close();
+            //Background.Close();
+            Player.Pause();
+            Background.Pause();
             PlayerButtons.Children.Clear();
             BackgroundButtons.Children.Clear();
 
@@ -539,7 +544,7 @@ namespace MediaPalyerPro
                 }
             }
         }
-        private void OnRenderFrameEventHandler(Sttplay.MediaPlayer.SCFrame obj)
+        private void OnRenderFrameEventHandler(Sttplay.MediaPlayer.SCFrame frame)
         {
             CheckNetworkSyncStatus();
 
