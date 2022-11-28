@@ -51,7 +51,7 @@ namespace MediaPalyerPro
 
                 this.Dispatcher.Invoke(() =>
                 {
-                    Log.Info($"Current Timer Count: {CurrentItem}  Load Item ID: {ID}");
+                    Log.Info($"Current Timer Count: {CurrentTimerCount}  Load Item ID: {ID}");
                     LoadItem(ID);
                 });
             }

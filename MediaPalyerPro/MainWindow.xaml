@@ -6,11 +6,13 @@
         xmlns:local="clr-namespace:MediaPalyerPro"
         xmlns:sttplay="clr-namespace:Sttplay.MediaPlayer"
         mc:Ignorable="d"
-        Title="Meida Player" Height="450" Width="800" Background="#00FFFFFF" 
-        Loaded="Window_Loaded" MouseDown="Window_MouseDown" >
+        Title="Meida Player" Height="720" Width="1280" Background="#00FFFFFF" 
+        Loaded="Window_Loaded" MouseDown="Window_MouseDown" Name="_window" >
     <Window.Resources>
         <Style TargetType="Button">
             <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="KeyboardNavigation.IsTabStop" Value="True"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Background" Value="#640000FF"/>
             <Setter Property="Foreground" Value="#6400FF00"/>
@@ -18,7 +20,7 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Grid>
+                        <Grid Focusable="False" KeyboardNavigation.IsTabStop="True">
                             <Border x:Name="background" Visibility="Hidden" Width="{TemplateBinding Width}" Height="{TemplateBinding Height}" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" SnapsToDevicePixels="True">
                                 <Border.Effect>
                                     <DropShadowEffect x:Name="background_dropEffect" Color="#CB323232" BlurRadius="8" Opacity="0.6"/>
@@ -51,30 +53,33 @@
             </Setter>
         </Style>        
     </Window.Resources>
-    <Viewbox>
-        <Grid Name="RootGroup">
-            <Grid x:Name="BackgroundGroup">                
-                <sttplay:WPFSCPlayerPro
+    <Viewbox Stretch="Fill" ClipToBounds="True">
+        <Grid Name="RootGroup" Width="{Binding Width, ElementName=_window}" Height="{Binding Height, ElementName=_window}" >
+            <Grid x:Name="BackgroundGroup" Visibility="Visible" IsVisibleChanged="GridGroup_IsVisibleChanged">                
+                <sttplay:WPFSCPlayerPro Visibility="{Binding Visibility, ElementName=BackgroundGroup}"
                     x:Name="BackgroundPlayer"
-                    Volume="0.8" Loop="True" OpenAndPlay="True"
+                    OpenMode="Link" AutoOpen="True" OpenAndPlay="True" Loop="True" Volume="0.8"
                     Stretch="Uniform" UseLayoutRounding="True" RenderOptions.BitmapScalingMode="HighQuality"
-                
+                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                    
                     IsVisibleChanged="WPFSCPlayerPro_IsVisibleChanged"
                     onCaptureOpenCallbackEvent="OnCaptureOpenCallbackEvent"
                     onRenderFrameEvent="OnRenderFrameEventHandler"
                     onStreamFinishedEvent="OnStreamFinishedEventHandler"
-                    onFirstFrameRenderEvent="OnFirstFrameRenderEventHandler"
+                    onFirstFrameRenderEvent="OnFirstFrameRenderEventHandler" 
                     />
 
-                <Canvas x:Name="BackgroundButtons" ></Canvas>
+                <Canvas x:Name="BackgroundButtons">
+                </Canvas>
             </Grid>
 
-            <Grid x:Name="MiddleGroup" Visibility="Hidden">
-                <sttplay:WPFSCPlayerPro
+            <Grid x:Name="MiddleGroup" Visibility="Hidden" IsVisibleChanged="GridGroup_IsVisibleChanged">
+                <sttplay:WPFSCPlayerPro Visibility="{Binding Visibility, ElementName=MiddleGroup}"
                     x:Name="MiddlePlayer"
-                    Volume="0.8" Loop="True" OpenAndPlay="True"
+                    OpenMode="Link" AutoOpen="True" OpenAndPlay="True" Loop="True" Volume="0.8"
                     Stretch="Uniform" UseLayoutRounding="True" RenderOptions.BitmapScalingMode="HighQuality"
-                
+                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                    
                     IsVisibleChanged="WPFSCPlayerPro_IsVisibleChanged"
                     onCaptureOpenCallbackEvent="OnCaptureOpenCallbackEvent"
                     onRenderFrameEvent="OnRenderFrameEventHandler"
@@ -82,15 +87,16 @@
                     onFirstFrameRenderEvent="OnFirstFrameRenderEventHandler"
                     />
 
-                <Canvas x:Name="MiddleButtons" ></Canvas>
+                <Canvas x:Name="MiddleButtons"></Canvas>
             </Grid>
 
-            <Grid x:Name="ForegroundGroup" Visibility="Hidden">
-                <sttplay:WPFSCPlayerPro
-                    x:Name="ForegroundPlayer"
-                    Volume="0.8" Loop="True" OpenAndPlay="True"
+            <Grid x:Name="ForegroundGroup" Visibility="Hidden" IsVisibleChanged="GridGroup_IsVisibleChanged">
+                <sttplay:WPFSCPlayerPro Visibility="{Binding Visibility, ElementName=ForegroundGroup}"
+                    x:Name="ForegroundPlayer" 
+                    OpenMode="Link" AutoOpen="True" OpenAndPlay="True" Loop="True" Volume="0.8"  
                     Stretch="Uniform" UseLayoutRounding="True" RenderOptions.BitmapScalingMode="HighQuality"
-                
+                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                    
                     IsVisibleChanged="WPFSCPlayerPro_IsVisibleChanged"
                     onCaptureOpenCallbackEvent="OnCaptureOpenCallbackEvent"
                     onRenderFrameEvent="OnRenderFrameEventHandler"

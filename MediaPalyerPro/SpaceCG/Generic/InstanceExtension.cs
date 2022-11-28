@@ -94,12 +94,16 @@ namespace SpaceCG.Generic
                     return;
                 }
 
+                Type valueType = property.GetValue(instanceObj)?.GetType();
+
                 //值不空 && 值类型为枚举类型
-                if (property.GetValue(instanceObj)?.GetType().IsEnum == true)
+                if (valueType?.IsEnum == true)
                     convertValue = Enum.Parse(property.PropertyType, newValue.ToString());
+                else if(valueType?.IsValueType == true)
+                    convertValue = StringExtension.ConvertValueTypeParameters(newValue, valueType);
                 else
                     convertValue = Convert.ChangeType(newValue, property.PropertyType);
-
+                
                 property.SetValue(instanceObj, convertValue, null);
             }
             catch (Exception ex)

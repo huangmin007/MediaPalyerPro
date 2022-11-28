@@ -18,7 +18,6 @@ using System.Text;
 using HPSocket;
 using SpaceCG.Generic;
 using SpaceCG.Log4Net.Controls;
-using System.Windows.Media;
 
 namespace MediaPalyerPro
 {
@@ -61,9 +60,7 @@ namespace MediaPalyerPro
 
         }
 
-        //private Canvas ForegroundButtons;
-
-        #region Inherit Functions
+        #region Override Functions
         /// <inheritdoc/>
         protected override void OnClosing(CancelEventArgs e)
         {
@@ -306,7 +303,7 @@ namespace MediaPalyerPro
         /// 播放列表项,,https://www.codenong.com/54797577/
         /// </summary>
         /// <param name="item"></param>
-        private void LoadItem(XElement item)
+        protected void LoadItem(XElement item)
         {
             if (item == null) return;
 
@@ -324,9 +321,9 @@ namespace MediaPalyerPro
             //XamlXmlReader xamlXmlReader = new XamlXmlReader(xmlReader, xamlXmlReaderSettings);
             //UIElement element = (UIElement)System.Windows.Markup.XamlReader.Load(xamlXmlReader);
 
-            MiddlePlayer.Pause();
-            ForegroundPlayer.Pause();
-            BackgroundPlayer.Pause();
+            //MiddlePlayer.Pause();
+            //ForegroundPlayer.Pause();
+            //BackgroundPlayer.Pause();
 
             try
             {
@@ -338,19 +335,22 @@ namespace MediaPalyerPro
                         continue;
                     }
 
+                    object uiElement = InstanceExtension.GetInstanceFieldObject(this, element.Name.LocalName);
+                    //WPFSCPlayerPro.Close()
+                    if (uiElement?.GetType() == typeof(WPFSCPlayerPro))
+                    {
+                        WPFSCPlayerPro WPFPlayer = (WPFSCPlayerPro)uiElement;
+                        WPFPlayer.Close();
+                    }
+
+                    //UIElement Property
                     InstanceExtension.ChangeInstancePropertyValue(this, element);
 
                     //CanvasButtons
-                    object uiElement = InstanceExtension.GetInstanceFieldObject(this, element.Name.LocalName);
                     if (uiElement?.GetType() == typeof(Canvas) && element.Elements("Button")?.Count() > 0)
                     {
                         Canvas CanvasButtons = (Canvas)uiElement;
-                        Console.WriteLine(CanvasButtons.Name);
                         //Clear
-                        //foreach (FrameworkElement button in CanvasButtons.Children)
-                        //{
-                            //CanvasButtons.UnregisterName(button.Name);
-                        //}
                         CanvasButtons.Children.Clear();
 
                         //Add
@@ -360,20 +360,21 @@ namespace MediaPalyerPro
                             XmlReader xmlReader = XmlReader.Create(stringReader, settings, context);
                             XamlXmlReader xamlXmlReader = new XamlXmlReader(xmlReader, xamlXmlReaderSettings);
                             Button button = (Button)System.Windows.Markup.XamlReader.Load(xamlXmlReader);
-                            //CanvasButtons.RegisterName(button.Name, button);
                             CanvasButtons.Children.Add(button);
                         }
                     }
 
-                    if(uiElement?.GetType() == typeof(WPFSCPlayerPro))
-                    {
-
-                    }
-
-                    //Actions
+                    //Sub Element Actions
                     foreach (XElement action in element?.Elements("Action"))
                     {
                         this.CallActionElement(action);
+                    }
+
+                    //WPFSCPlayerPro.Open()
+                    if (uiElement?.GetType() == typeof(WPFSCPlayerPro))
+                    {
+                        WPFSCPlayerPro WPFPlayer = (WPFSCPlayerPro)uiElement;
+                        if(WPFPlayer.AutoOpen) WPFPlayer.Open(MediaType.Link, null);
                     }
                 }
             }
@@ -381,6 +382,8 @@ namespace MediaPalyerPro
             {
                 Log.Error($"加载配置项错误：{ex}");
             }
+
+            GC.Collect();
         }
 
         /// <summary>
@@ -389,7 +392,7 @@ namespace MediaPalyerPro
         /// <param name="eventName"></param>
         /// <param name="currentTime"></param>
         /// <param name="lastTime"></param>
-        private void CallPlayerEvent(WPFSCPlayerPro player, String eventName, double currentTime = -1.0f, double lastTime = -1.0f)
+        protected void CallPlayerEvent(WPFSCPlayerPro player, String eventName, double currentTime = -1.0f, double lastTime = -1.0f)
         {
             IEnumerable<XElement> events = from evs in CurrentItem?.Element(player.Name)?.Elements("Events")
                                            where evs.Attribute("Name")?.Value == eventName
@@ -421,18 +424,35 @@ namespace MediaPalyerPro
         /// Call Button Event
         /// </summary>
         /// <param name="button"></param>
-        private void CallButtonEvent(Button button)
+        protected void CallButtonEvent(Button button)
         {
+            if (CurrentItem == null) return;
+
             String name = button.Name;
             String parent = button.Parent.GetValue(NameProperty).ToString();
             Log.Info($"CallButtonEvent: {parent}.{name}");
+            if (CurrentItem.Element(parent) == null)
+            {
 
-            IEnumerable<XElement> events = from evs in CurrentItem?.Element(parent)?.Elements("Events")
+                return;
+            }
+#if true
+            IEnumerable<XElement> events = from evs in CurrentItem.Element(parent).Elements("Events")
                                            where evs.Attribute("Name")?.Value == "Click" &&
                                            (String.IsNullOrWhiteSpace(evs.Attribute("Button")?.Value) || evs.Attribute("Button")?.Value == name)
                                            select evs;
-
-            foreach (XElement element in events.Elements())
+#else
+            List<XElement> events = new List<XElement>();
+            foreach (var evs in CurrentItem.Element(parent).Elements("Events"))
+            {
+                if(evs.Attribute("Name")?.Value == "Click" && 
+                    (String.IsNullOrWhiteSpace(evs.Attribute("Button")?.Value) || evs.Attribute("Button")?.Value == name))
+                {
+                    events.Add(evs);
+                }
+            }
+#endif
+            foreach (XElement element in events?.Elements())
             {
                 if (element.Name.LocalName == "Action")
                 {
@@ -479,7 +499,7 @@ namespace MediaPalyerPro
         /// Call Action XElement
         /// </summary>
         /// <param name="action"></param>
-        private void CallActionElement(XElement action)
+        protected void CallActionElement(XElement action)
         {
             if (action?.Name?.LocalName != "Action") return;
 
@@ -535,7 +555,7 @@ namespace MediaPalyerPro
             }
         }
 
-        #region Player Events Handler
+#region Player Events Handler
         //private double LastTime = 0.0f;
         //private IEnumerable<XElement> onRenderEvents;
 
@@ -610,19 +630,24 @@ namespace MediaPalyerPro
             }
         }
 
+#endregion
+        private void GridGroup_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+
+        }
         private void WPFSCPlayerPro_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
             if (!this.IsLoaded) return;
-            WPFSCPlayerPro player = (WPFSCPlayerPro)sender;
-            Log.Info($"WPFSCPlayerPro({player.Name}) IsVisibleChanged: {player.Visibility}");
 
-            if (player.Visibility != Visibility.Visible)
+            WPFSCPlayerPro player = (WPFSCPlayerPro)sender;
+            Log.Info($"WPFSCPlayerPro({player.Name})  IsVisibleChanged:{player.Visibility}  NewValue:{e.NewValue}");
+            
+            FrameworkElement parent = (FrameworkElement)player.Parent;
+            if (player.Visibility != Visibility.Visible || parent.Visibility != Visibility.Visible)
             {
                 player.Pause();
             }
         }
-
-        #endregion
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {

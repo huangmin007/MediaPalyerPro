@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace SpaceCG.Generic
 {
@@ -67,6 +68,25 @@ namespace SpaceCG.Generic
 
                 uint temp = array[i];
                 if (!UInt32.TryParse(stringArray[i], style, provider, out array[i]))
+                    array[i] = temp;
+            }
+        }
+
+        public static void ToDoubleArray(this String value, ref double[] array, char separator = ',', NumberStyles style = NumberStyles.None, IFormatProvider provider = null)
+        {
+            string[] stringArray = value.Trim().Split(separator);
+
+            if (array == null || array.Length <= 0)
+                array = new double[stringArray.Length];
+
+            int length = Math.Min(stringArray.Length, array.Length);
+
+            for (int i = 0; i < length; i++)
+            {
+                if (String.IsNullOrWhiteSpace(stringArray[i])) continue;
+
+                double temp = array[i];
+                if (!double.TryParse(stringArray[i], style, provider, out array[i]))
                     array[i] = temp;
             }
         }
@@ -273,6 +293,12 @@ namespace SpaceCG.Generic
                     argument = UInt64.TryParse(param.Replace("0x", ""), NumberStyles.HexNumber, null, out UInt64 value) ? value : (UInt64)0x00;
                 else
                     argument = UInt64.TryParse(param, out UInt64 value) ? value : (UInt64)0x00;
+            }
+            else if (paramType == typeof(Thickness))
+            {
+                double[] thick = { 0.0f, 0.0f, 0.0f, 0.0f };
+                ToDoubleArray(param, ref thick);
+                argument = new Thickness(thick[0], thick[1], thick[2], thick[3]);
             }
             else
             {
