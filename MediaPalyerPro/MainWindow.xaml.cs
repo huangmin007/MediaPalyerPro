@@ -58,6 +58,8 @@ namespace MediaPalyerPro
             ((log4net.Repository.Hierarchy.Hierarchy)log4net.LogManager.GetRepository()).Root.Level = log4net.Core.Level.Debug;
 #endif
 
+            RootGroup.Width = this.Width;
+            RootGroup.Height = this.Height;
         }
 
         #region Override Functions
@@ -321,9 +323,9 @@ namespace MediaPalyerPro
             //XamlXmlReader xamlXmlReader = new XamlXmlReader(xmlReader, xamlXmlReaderSettings);
             //UIElement element = (UIElement)System.Windows.Markup.XamlReader.Load(xamlXmlReader);
 
-            //MiddlePlayer.Pause();
-            //ForegroundPlayer.Pause();
-            //BackgroundPlayer.Pause();
+            MiddlePlayer.Pause();
+            ForegroundPlayer.Pause();
+            BackgroundPlayer.Pause();
 
             try
             {
@@ -335,7 +337,7 @@ namespace MediaPalyerPro
                         continue;
                     }
 
-                    object uiElement = InstanceExtension.GetInstanceFieldObject(this, element.Name.LocalName);
+                    FrameworkElement uiElement = (FrameworkElement)InstanceExtension.GetInstanceFieldObject(this, element.Name.LocalName);
                     //WPFSCPlayerPro.Close()
                     if (uiElement?.GetType() == typeof(WPFSCPlayerPro))
                     {
@@ -343,15 +345,16 @@ namespace MediaPalyerPro
                         WPFPlayer.Close();
                     }
 
-                    //UIElement Property
+                    //FrameworkElement Property
                     InstanceExtension.ChangeInstancePropertyValue(this, element);
 
                     //CanvasButtons
-                    if (uiElement?.GetType() == typeof(Canvas) && element.Elements("Button")?.Count() > 0)
+                    //if (uiElement?.GetType() == typeof(Canvas) && element.Elements("Button")?.Count() > 0)
+                    if (uiElement.Name.IndexOf("Buttons") != 0 && element.Elements("Button")?.Count() > 0)
                     {
-                        Canvas CanvasButtons = (Canvas)uiElement;
+                        Panel PanelButtons = (Panel)uiElement;
                         //Clear
-                        CanvasButtons.Children.Clear();
+                        PanelButtons.Children.Clear();
 
                         //Add
                         foreach (XElement btnElement in element.Elements("Button"))
@@ -360,7 +363,7 @@ namespace MediaPalyerPro
                             XmlReader xmlReader = XmlReader.Create(stringReader, settings, context);
                             XamlXmlReader xamlXmlReader = new XamlXmlReader(xmlReader, xamlXmlReaderSettings);
                             Button button = (Button)System.Windows.Markup.XamlReader.Load(xamlXmlReader);
-                            CanvasButtons.Children.Add(button);
+                            PanelButtons.Children.Add(button);
                         }
                     }
 

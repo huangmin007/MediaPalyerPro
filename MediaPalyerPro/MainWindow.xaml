@@ -12,8 +12,12 @@
         <Style TargetType="Button">
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Focusable" Value="False"/>
-            <Setter Property="KeyboardNavigation.IsTabStop" Value="True"/>
+            <Setter Property="KeyboardNavigation.IsTabStop" Value="False"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+            <Setter Property="VerticalAlignment" Value="Top"/>
             <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Width" Value="100"/>
+            <Setter Property="Height" Value="50"/>
             <Setter Property="Background" Value="#640000FF"/>
             <Setter Property="Foreground" Value="#6400FF00"/>
             <EventSetter Event="Click" Handler="Button_Click"/>
@@ -51,11 +55,13 @@
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
-        </Style>        
+        </Style>
     </Window.Resources>
-    <Viewbox Stretch="Fill" ClipToBounds="True">
-        <Grid Name="RootGroup" Width="{Binding Width, ElementName=_window}" Height="{Binding Height, ElementName=_window}" >
-            <Grid x:Name="BackgroundGroup" Visibility="Visible" IsVisibleChanged="GridGroup_IsVisibleChanged">                
+    <Viewbox Stretch="Uniform" ClipToBounds="True" Focusable="False">
+        
+        <Grid Name="RootGroup" Focusable="False" >            
+            <!-- BackgroundGroup -->
+            <Grid x:Name="BackgroundGroup"  Visibility="Visible" IsVisibleChanged="GridGroup_IsVisibleChanged">
                 <sttplay:WPFSCPlayerPro Visibility="{Binding Visibility, ElementName=BackgroundGroup}"
                     x:Name="BackgroundPlayer"
                     OpenMode="Link" AutoOpen="True" OpenAndPlay="True" Loop="True" Volume="0.8"
@@ -73,6 +79,7 @@
                 </Canvas>
             </Grid>
 
+            <!-- MiddleGroup -->
             <Grid x:Name="MiddleGroup" Visibility="Hidden" IsVisibleChanged="GridGroup_IsVisibleChanged">
                 <sttplay:WPFSCPlayerPro Visibility="{Binding Visibility, ElementName=MiddleGroup}"
                     x:Name="MiddlePlayer"
@@ -90,6 +97,7 @@
                 <Canvas x:Name="MiddleButtons"></Canvas>
             </Grid>
 
+            <!-- ForegroundGroup -->
             <Grid x:Name="ForegroundGroup" Visibility="Hidden" IsVisibleChanged="GridGroup_IsVisibleChanged">
                 <sttplay:WPFSCPlayerPro Visibility="{Binding Visibility, ElementName=ForegroundGroup}"
                     x:Name="ForegroundPlayer" 
@@ -115,7 +123,7 @@
                         </Button.Foreground>
                     </Button>
                     -->
-                </Canvas>                
+                </Canvas>
             </Grid>
 
         </Grid>

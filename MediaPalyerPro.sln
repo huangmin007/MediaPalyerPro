@@ -5,6 +5,8 @@ VisualStudioVersion = 16.0.31321.278
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MediaPalyerPro", "MediaPalyerPro\MediaPalyerPro.csproj", "{232BEB03-15D0-4306-8A0A-CE91BB96430F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test", "Test\Test.csproj", "{2FFFF472-8210-4327-AB5E-B5118B74768D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{232BEB03-15D0-4306-8A0A-CE91BB96430F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{232BEB03-15D0-4306-8A0A-CE91BB96430F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{232BEB03-15D0-4306-8A0A-CE91BB96430F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2FFFF472-8210-4327-AB5E-B5118B74768D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2FFFF472-8210-4327-AB5E-B5118B74768D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2FFFF472-8210-4327-AB5E-B5118B74768D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2FFFF472-8210-4327-AB5E-B5118B74768D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

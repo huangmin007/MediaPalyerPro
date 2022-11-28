@@ -90,7 +90,7 @@ namespace SpaceCG.Generic
             {
                 if (newValue == null || newValue.ToString().ToLower().Trim() == "null")
                 {
-                    property.SetValue(instanceObj, convertValue, null);
+                    property.SetValue(instanceObj, convertValue);
                     return;
                 }
 
@@ -104,11 +104,11 @@ namespace SpaceCG.Generic
                 else
                     convertValue = Convert.ChangeType(newValue, property.PropertyType);
                 
-                property.SetValue(instanceObj, convertValue, null);
+                property.SetValue(instanceObj, convertValue);
             }
             catch (Exception ex)
             {
-                Logger.ErrorFormat("设置实例对象 {0} 的属性 {1} 值 {2} 失败：{3}", type, property, newValue == null ? "null" : newValue, ex);
+                Logger.ErrorFormat("设置实例对象 {0} 的属性 {1} 值 {2} 失败：{3}", type, property, newValue == null ? "null" : newValue, ex);                
             }
         }
 
