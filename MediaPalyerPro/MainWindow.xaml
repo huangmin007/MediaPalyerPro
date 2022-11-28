@@ -49,45 +49,56 @@
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
-        </Style>
-
+        </Style>        
     </Window.Resources>
     <Viewbox>
-        <Grid>
-            <Grid x:Name="BackgroundGroup">
-                <sttplay:WPFSCPlayerPro 
-                x:Name="Background" 
-                Volume="0.0"
-                Loop="True"
-                OpenAndPlay="True"
-                Stretch="Uniform" 
-                UseLayoutRounding="True"
-                RenderOptions.BitmapScalingMode="HighQuality"
-                IsVisibleChanged="WPFSCPlayerPro_IsVisibleChanged"
-            />
+        <Grid Name="RootGroup">
+            <Grid x:Name="BackgroundGroup">                
+                <sttplay:WPFSCPlayerPro
+                    x:Name="BackgroundPlayer"
+                    Volume="0.8" Loop="True" OpenAndPlay="True"
+                    Stretch="Uniform" UseLayoutRounding="True" RenderOptions.BitmapScalingMode="HighQuality"
+                
+                    IsVisibleChanged="WPFSCPlayerPro_IsVisibleChanged"
+                    onCaptureOpenCallbackEvent="OnCaptureOpenCallbackEvent"
+                    onRenderFrameEvent="OnRenderFrameEventHandler"
+                    onStreamFinishedEvent="OnStreamFinishedEventHandler"
+                    onFirstFrameRenderEvent="OnFirstFrameRenderEventHandler"
+                    />
 
-                <Canvas x:Name="BackgroundButtons">
-                </Canvas>
+                <Canvas x:Name="BackgroundButtons" ></Canvas>
             </Grid>
 
-
-            <Grid x:Name="PlayerGroup">
+            <Grid x:Name="MiddleGroup" Visibility="Hidden">
                 <sttplay:WPFSCPlayerPro
-                x:Name="Player"
-                Volume="0.8"
-                OpenAndPlay="True"
-                Stretch="Uniform" 
-                UseLayoutRounding="True"
-                RenderOptions.BitmapScalingMode="HighQuality"
-                IsVisibleChanged="WPFSCPlayerPro_IsVisibleChanged"
-            
-                onCaptureOpenCallbackEvent="OnCaptureOpenCallbackEvent"
-                onRenderFrameEvent="OnRenderFrameEventHandler"
-                onStreamFinishedEvent="OnStreamFinishedEventHandler"
-                onFirstFrameRenderEvent="OnFirstFrameRenderEventHandler"
-            />
+                    x:Name="MiddlePlayer"
+                    Volume="0.8" Loop="True" OpenAndPlay="True"
+                    Stretch="Uniform" UseLayoutRounding="True" RenderOptions.BitmapScalingMode="HighQuality"
+                
+                    IsVisibleChanged="WPFSCPlayerPro_IsVisibleChanged"
+                    onCaptureOpenCallbackEvent="OnCaptureOpenCallbackEvent"
+                    onRenderFrameEvent="OnRenderFrameEventHandler"
+                    onStreamFinishedEvent="OnStreamFinishedEventHandler"
+                    onFirstFrameRenderEvent="OnFirstFrameRenderEventHandler"
+                    />
 
-                <Canvas x:Name="PlayerButtons">
+                <Canvas x:Name="MiddleButtons" ></Canvas>
+            </Grid>
+
+            <Grid x:Name="ForegroundGroup" Visibility="Hidden">
+                <sttplay:WPFSCPlayerPro
+                    x:Name="ForegroundPlayer"
+                    Volume="0.8" Loop="True" OpenAndPlay="True"
+                    Stretch="Uniform" UseLayoutRounding="True" RenderOptions.BitmapScalingMode="HighQuality"
+                
+                    IsVisibleChanged="WPFSCPlayerPro_IsVisibleChanged"
+                    onCaptureOpenCallbackEvent="OnCaptureOpenCallbackEvent"
+                    onRenderFrameEvent="OnRenderFrameEventHandler"
+                    onStreamFinishedEvent="OnStreamFinishedEventHandler"
+                    onFirstFrameRenderEvent="OnFirstFrameRenderEventHandler"
+                    />
+
+                <Canvas x:Name="ForegroundButtons">
                     <!--Visibility="{Binding Visibility, ElementName=Player}"
                     <Button Name="Btn_00" Width="100" Height="100" FontSize="50" Margin="150,150">
                         <Button.Background>

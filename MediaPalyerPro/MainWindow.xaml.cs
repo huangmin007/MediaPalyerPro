@@ -28,7 +28,7 @@ namespace MediaPalyerPro
     public partial class MainWindow : Window
     {
         public static readonly log4net.ILog Log = log4net.LogManager.GetLogger(nameof(MainWindow));
-        private readonly string MEDIA_CONFIG_FILE = "MediaItems.Config";
+        private readonly string MEDIA_CONFIG_FILE = "MediaContents.Config";
 
         private XElement RootElement = null;
         private IEnumerable<XElement> ListItems;
@@ -61,23 +61,29 @@ namespace MediaPalyerPro
 
         }
 
+        //private Canvas ForegroundButtons;
+
         #region Inherit Functions
         /// <inheritdoc/>
         protected override void OnClosing(CancelEventArgs e)
         {
             base.OnClosing(e);
 
-            Player.Close();
-            Background.Close();
+            ForegroundPlayer.ReleaseCore();
+            MiddlePlayer.ReleaseCore();
+            BackgroundPlayer.ReleaseCore();
+
             LoggerWindow.Close();
 
             InstanceExtension.DisposeAccessObjects(AccessObjects);
 
             InstanceExtension.DisposeNetworkClient(ref UDPClientSync);
             InstanceExtension.DisposeNetworkServer(ref UDPServerSync);
-
-            InstanceExtension.RemoveInstanceEvents(Player);
             InstanceExtension.DisposeProcessModule(ref ProcessModule);
+
+            InstanceExtension.RemoveInstanceEvents(BackgroundPlayer);
+            InstanceExtension.RemoveInstanceEvents(MiddlePlayer);
+            InstanceExtension.RemoveInstanceEvents(ForegroundPlayer);
         }
         
         /// <inheritdoc/>
@@ -85,6 +91,8 @@ namespace MediaPalyerPro
         {
             base.OnKeyUp(e);
             if (e.IsRepeat) return;
+
+            TimerRestart();
             Log.Info($"OnKeyDown: {e.KeyboardDevice.Modifiers} - {e.Key}");
 
             switch (e.Key)
@@ -114,9 +122,9 @@ namespace MediaPalyerPro
                 case Key.R:
                     if (e.KeyboardDevice.Modifiers == ModifierKeys.Control)
                     {
+                        LoadConfig(MEDIA_CONFIG_FILE);
                         //Process.Start(Process.GetCurrentProcess().MainModule.FileName);
                         //Application.Current.Shutdown();
-                        LoadConfig(MEDIA_CONFIG_FILE);
                     }
                     break;
 
@@ -150,20 +158,26 @@ namespace MediaPalyerPro
 
                 case Key.Space:
                 case Key.Enter:
-                    if (Player.Visibility == Visibility.Visible)
+                    if (ForegroundPlayer.Visibility == Visibility.Visible)
                     {
-                        if (Player.IsPaused)
-                            Player.Play();
+                        if (ForegroundPlayer.IsPaused)
+                            ForegroundPlayer.Play();
                         else
-                            Player.Pause();
-                        return;
+                            ForegroundPlayer.Pause();
                     }
-                    if(Background.Visibility == Visibility.Visible)
+                    if (MiddlePlayer.Visibility == Visibility.Visible)
                     {
-                        if (Background.IsPaused)
-                            Background.Play();
+                        if (MiddlePlayer.IsPaused)
+                            MiddlePlayer.Play();
                         else
-                            Background.Pause();
+                            MiddlePlayer.Pause();
+                    }
+                    if (BackgroundPlayer.Visibility == Visibility.Visible)
+                    {
+                        if (BackgroundPlayer.IsPaused)
+                            BackgroundPlayer.Play();
+                        else
+                            BackgroundPlayer.Pause();
                     }
                     break;
 
@@ -178,8 +192,8 @@ namespace MediaPalyerPro
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             //Create Instance
-            Modbus.Device.IModbusMaster ModbusDIO = InstanceExtension.CreateNModbus4Master("Modbus.Master.DIO");
-            if (ModbusDIO != null) AccessObjects.TryAdd("Modbus.Master.DIO", ModbusDIO);
+            Modbus.Device.IModbusMaster ModbusDIO = InstanceExtension.CreateNModbus4Master("Modbus.Master");
+            if (ModbusDIO != null) AccessObjects.TryAdd("Modbus.Master", ModbusDIO);
             System.IO.Ports.SerialPort SerialPort = InstanceExtension.CreateSerialPort("SerialPort.PortName", null);
             if (SerialPort != null) AccessObjects.TryAdd("SerialPort", SerialPort);
 
@@ -198,12 +212,16 @@ namespace MediaPalyerPro
 
         private HandleResult OnClientReceiveEventHandler(IClient sender, byte[] data)
         {
+            String message = Encoding.UTF8.GetString(data);
+            Log.Info($"Client Receive Data: {message}");
+
+            TimerRestart();
             return HandleResult.Ok;
         }
         private HandleResult OnServerReceiveEventHandler(IServer sender, IntPtr connId, byte[] data)
         {
             String message = Encoding.UTF8.GetString(data);
-            Log.Info($"Receive Data: {message}");
+            Log.Info($"Server Receive Data: {message}");
 
             TimerRestart();
             XElement element = null;
@@ -232,6 +250,7 @@ namespace MediaPalyerPro
             {
                 Log.Error($"数据执行错误：{ex}");
             }
+
             return HandleResult.Ok;
         }
 
@@ -241,8 +260,6 @@ namespace MediaPalyerPro
         /// <param name="fileName"></param>
         public void LoadConfig(String fileName)
         {
-            //ImageSource im = new ImageSource();
-
             if (!File.Exists(fileName)) return;
 
             try
@@ -273,10 +290,10 @@ namespace MediaPalyerPro
 
             IEnumerable<XElement> items = from element in ListItems
                                           from attribute in element.Attributes()
-                                          where attribute?.Name == "ID" && attribute?.Value == id.ToString()
+                                          where attribute?.Name == "ID" && attribute?.Value.Trim() == id.ToString()
                                           select element;
 
-            Log.Info($"Load Config Item ID: {id}, Count: {items.Count()}");
+            Log.Info($"Ready Load Config Item ID: {id}, Count: {items.Count()}");
             if (items.Count() != 1)
             {
                 Log.Warn($"配置项列表中不存在指定的 ID 项, 或存在多个相同的 ID: {id} ");
@@ -293,7 +310,6 @@ namespace MediaPalyerPro
         {
             if (item == null) return;
 
-            TimerRestart();
             CurrentItem = item;
 
             //StringReader stringReader = new StringReader("");
@@ -308,17 +324,9 @@ namespace MediaPalyerPro
             //XamlXmlReader xamlXmlReader = new XamlXmlReader(xmlReader, xamlXmlReaderSettings);
             //UIElement element = (UIElement)System.Windows.Markup.XamlReader.Load(xamlXmlReader);
 
-            foreach (FrameworkElement uiElement in PlayerButtons.Children)
-                PlayerButtons.UnregisterName(uiElement.Name);
-            foreach (FrameworkElement uiElement in BackgroundButtons.Children)
-                BackgroundButtons.UnregisterName(uiElement.Name);
-
-            //Player.Close();
-            //Background.Close();
-            Player.Pause();
-            Background.Pause();
-            PlayerButtons.Children.Clear();
-            BackgroundButtons.Children.Clear();
+            MiddlePlayer.Pause();
+            ForegroundPlayer.Pause();
+            BackgroundPlayer.Pause();
 
             try
             {
@@ -332,20 +340,34 @@ namespace MediaPalyerPro
 
                     InstanceExtension.ChangeInstancePropertyValue(this, element);
 
-                    //Buttons
+                    //CanvasButtons
                     object uiElement = InstanceExtension.GetInstanceFieldObject(this, element.Name.LocalName);
-                    if (element.Elements("Button")?.Count() > 0 && uiElement?.GetType() == typeof(Canvas))
+                    if (uiElement?.GetType() == typeof(Canvas) && element.Elements("Button")?.Count() > 0)
                     {
-                        Canvas canvas = (Canvas)uiElement;
+                        Canvas CanvasButtons = (Canvas)uiElement;
+                        Console.WriteLine(CanvasButtons.Name);
+                        //Clear
+                        //foreach (FrameworkElement button in CanvasButtons.Children)
+                        //{
+                            //CanvasButtons.UnregisterName(button.Name);
+                        //}
+                        CanvasButtons.Children.Clear();
+
+                        //Add
                         foreach (XElement btnElement in element.Elements("Button"))
                         {
                             StringReader stringReader = new StringReader(btnElement.ToString());
                             XmlReader xmlReader = XmlReader.Create(stringReader, settings, context);
                             XamlXmlReader xamlXmlReader = new XamlXmlReader(xmlReader, xamlXmlReaderSettings);
                             Button button = (Button)System.Windows.Markup.XamlReader.Load(xamlXmlReader);
-                            canvas.RegisterName(button.Name, button);
-                            canvas.Children.Add(button);
+                            //CanvasButtons.RegisterName(button.Name, button);
+                            CanvasButtons.Children.Add(button);
                         }
+                    }
+
+                    if(uiElement?.GetType() == typeof(WPFSCPlayerPro))
+                    {
+
                     }
 
                     //Actions
@@ -367,9 +389,9 @@ namespace MediaPalyerPro
         /// <param name="eventName"></param>
         /// <param name="currentTime"></param>
         /// <param name="lastTime"></param>
-        private void CallPlayerEvent(String eventName, double currentTime = -1.0f, double lastTime = -1.0f)
+        private void CallPlayerEvent(WPFSCPlayerPro player, String eventName, double currentTime = -1.0f, double lastTime = -1.0f)
         {
-            IEnumerable<XElement> events = from evs in CurrentItem?.Element(nameof(Player))?.Elements("Events")
+            IEnumerable<XElement> events = from evs in CurrentItem?.Element(player.Name)?.Elements("Events")
                                            where evs.Attribute("Name")?.Value == eventName
                                            select evs;
 
@@ -399,14 +421,15 @@ namespace MediaPalyerPro
         /// Call Button Event
         /// </summary>
         /// <param name="button"></param>
-        public void CallButtonEvent(Button button)
+        private void CallButtonEvent(Button button)
         {
             String name = button.Name;
             String parent = button.Parent.GetValue(NameProperty).ToString();
+            Log.Info($"CallButtonEvent: {parent}.{name}");
 
             IEnumerable<XElement> events = from evs in CurrentItem?.Element(parent)?.Elements("Events")
                                            where evs.Attribute("Name")?.Value == "Click" &&
-                                           (String.IsNullOrWhiteSpace(evs.Attribute("Button")?.Value) || evs.Attribute("Button")?.Value == button.Name)
+                                           (String.IsNullOrWhiteSpace(evs.Attribute("Button")?.Value) || evs.Attribute("Button")?.Value == name)
                                            select evs;
 
             foreach (XElement element in events.Elements())
@@ -420,32 +443,24 @@ namespace MediaPalyerPro
                     InstanceExtension.ChangeInstancePropertyValue(this, element);
                 }
             }
-        }
-        /// <summary>
-        /// Call Button Event
-        /// </summary>
-        /// <param name="btnName"></param>
-        public void CallButtonEvent(String btnName)
-        {
-            object obj = this.FindName(btnName);
-            if (obj == null || obj.GetType() != typeof(Button)) return;
-
-            this.CallButtonEvent((Button)obj);
-        }
+        }        
         /// <summary>
         /// Call指定项的按扭事件
         /// </summary>
-        /// <param name="itemId"></param>
-        /// <param name="btnName"></param>
-        public void CallButtonEvent(int itemId, String btnName)
+        /// <param name="id"></param>
+        /// <param name="layerName"></param>
+        /// <param name="elementName"></param>
+        public void CallButtonEvent(int id, String layerName, String elementName)
         {
             IEnumerable<XElement> events = from item in ListItems
-                                           where item.Attribute("ID")?.Value == itemId.ToString()
+                                           where item.Attribute("ID")?.Value.Trim() == id.ToString()
                                            from element in item.Elements()
-                                           where element.Name.LocalName.IndexOf("Buttons") > 0
+                                           where element.Name.LocalName == layerName
                                            from evElement in element.Elements("Events")
-                                           where evElement.Attribute("Name")?.Value == "Click" && evElement.Attribute("Button")?.Value == btnName
+                                           where evElement.Attribute("Name")?.Value?.Trim() == "Click" && evElement.Attribute("Button")?.Value?.Trim() == elementName
                                            select evElement;
+
+            Log.Info($"CallButtonEvent: ItemID: {id}  LayerName:{layerName}  ButtonName: {elementName}  Count: {events?.Count()}");
 
             foreach (XElement element in events.Elements())
             {
@@ -458,7 +473,6 @@ namespace MediaPalyerPro
                     InstanceExtension.ChangeInstancePropertyValue(this, element);
                 }
             }
-
         }
 
         /// <summary>
@@ -522,61 +536,70 @@ namespace MediaPalyerPro
         }
 
         #region Player Events Handler
-        private double LastTime = 0.0f;
-        private IEnumerable<XElement> onRenderEvents;
+        //private double LastTime = 0.0f;
+        //private IEnumerable<XElement> onRenderEvents;
 
-        private void OnCaptureOpenCallbackEvent(CaptureOpenResult result, string message, OpenCallbackContext context)
+        private Dictionary<String, double> playerLastTimer = new Dictionary<string, double>();
+        private Dictionary<String, IEnumerable<XElement>> playerRenderEvents = new Dictionary<string, IEnumerable<XElement>>();
+
+        private void OnCaptureOpenCallbackEvent(WPFSCPlayerPro player, CaptureOpenResult result, string message, OpenCallbackContext context)
         {
+            if (Log.IsDebugEnabled)
+                Log.Debug($"WPFSCPlayerPro({player.Name}) On Capture Open Callback Event, Result: {result}  Message: {message}");
+
             if (result != CaptureOpenResult.SUCCESS) return;
 
-            //PlayerVideoInfo();
-            onRenderEvents = null;
+            if (!playerLastTimer.ContainsKey(player.Name))
+                playerLastTimer.Add(player.Name, 0.0f);
+            if(!playerRenderEvents.ContainsKey(player.Name))
+                playerRenderEvents.Add(player.Name, null);
 
-            if (CurrentItem?.Element(nameof(Player)) != null)
+            playerRenderEvents[player.Name] = null;
+            if (CurrentItem?.Element(player.Name) != null)
             {
-                IEnumerable<XElement> events = CurrentItem.Element(nameof(Player))?.Elements("Events");
+                IEnumerable<XElement> events = CurrentItem.Element(player.Name)?.Elements("Events");
                 if (events.Count() > 0)
                 {
-                    onRenderEvents = from ev in events
-                                     where ev.Attribute("Name")?.Value == "OnRenderFrame"
-                                     select ev;
-                    if (onRenderEvents.Count() == 0) onRenderEvents = null;
+                    playerRenderEvents[player.Name] = from ev in events
+                                                  where ev.Attribute("Name")?.Value == "OnRenderFrame"
+                                                  select ev;
+                    if (playerRenderEvents[player.Name].Count() == 0) playerRenderEvents[player.Name] = null;
                 }
             }
         }
-        private void OnRenderFrameEventHandler(Sttplay.MediaPlayer.SCFrame frame)
+        private void OnRenderFrameEventHandler(WPFSCPlayerPro player, SCFrame frame)
         {
             CheckNetworkSyncStatus();
 
-            if (onRenderEvents != null)
+            if (playerRenderEvents[player.Name] != null)
             {
-                double currentTime = Math.Round(Player.CurrentTime / 1000.0f, 2);
-                if (LastTime == currentTime) return;
+                double currentTime = Math.Round(player.CurrentTime / 1000.0f, 2);
+                if (playerLastTimer[player.Name] == currentTime) return;
 
-                CallPlayerEvent("OnRenderFrame", currentTime, LastTime);
-                LastTime = currentTime;
+                CallPlayerEvent(player, "OnRenderFrame", currentTime, playerLastTimer[player.Name]);
+                playerLastTimer[player.Name] = currentTime;
             }
         }
-        private void OnFirstFrameRenderEventHandler(Sttplay.MediaPlayer.SCFrame obj)
+        private void OnFirstFrameRenderEventHandler(WPFSCPlayerPro player, SCFrame frame)
         {
             if (Log.IsDebugEnabled)
-                Log.Debug($"First Frame Render Evnet. {Player.Url}");
+                Log.Debug($"WPFSCPlayerPro({player.Name}) First Frame Render Evnet. URL: {player.Url}");
 
             if (UDPClientSync != null)  //4字节心跳
                 UDPClientSync.Send(SyncMessage, SyncMessage.Length - 4, 4);
 
-            CallPlayerEvent("OnFirstFrame");
-            LastTime = Math.Round(Player.CurrentTime / 1000.0f, 2);
+            CallPlayerEvent(player, "OnFirstFrame");
+            playerLastTimer[player.Name] = Math.Round(player.CurrentTime / 1000.0f, 2);
         }
-        private void OnStreamFinishedEventHandler()
+        private void OnStreamFinishedEventHandler(WPFSCPlayerPro player)
         {
             if (Log.IsDebugEnabled)
-                Log.Debug($"Stream Finish Event. {Player.Url}");
+                Log.Debug($"WPFSCPlayerPro({player.Name}) Stream Finish Event. URL: {player.Url}");
 
             if (UDPClientSync != null)  //4字节心跳
                 UDPClientSync.Send(SyncMessage, SyncMessage.Length - 4, 4);
 
-            CallPlayerEvent("OnLastFrame");
+            CallPlayerEvent(player, "OnLastFrame");
 
             if (ListAutoLoop)
             {
@@ -607,7 +630,7 @@ namespace MediaPalyerPro
             Log.Info($"Click Button: {button.Name}");
 
             TimerRestart();
-            CallButtonEvent(button.Name);
+            CallButtonEvent(button);
         }
         private void Window_MouseDown(object sender, MouseButtonEventArgs e)
         {
@@ -620,11 +643,11 @@ namespace MediaPalyerPro
         /// </summary>
         public void PlayerVideoInfo()
         {
-            Type type = Player.GetType();
+            Type type = ForegroundPlayer.GetType();
             PropertyInfo[] properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
             foreach (PropertyInfo property in properties)
             {
-                Log.InfoFormat("{0}: {1}", property.Name, property.GetValue(Player));
+                Log.InfoFormat("{0}: {1}", property.Name, property.GetValue(ForegroundPlayer));
             }
         }
 

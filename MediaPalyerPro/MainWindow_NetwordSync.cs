@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using HPSocket;
 using SpaceCG.Generic;
+using Sttplay.MediaPlayer;
 
 namespace MediaPalyerPro
 {
@@ -20,35 +21,52 @@ namespace MediaPalyerPro
         /// 多端同步，主机对象
         /// </summary>
         private HPSocket.IServer UDPServerSync;
+
         /// <summary>
         /// 多端同步校准误差时间(ms)
         /// </summary>
         private ushort SyncCalibr = 120;
+        /// <summary>
+        /// 多端同步后，等待的帧间隔
+        /// </summary>
         private ushort SyncWaitCount = 120;
+        /// <summary>
+        /// 多端同步消息
+        /// </summary>
         private byte[] SyncMessage = new byte[16];
+        /// <summary>
+        /// 指定的多端同步播放器
+        /// </summary>
+        private WPFSCPlayerPro SyncPlayer;
 
         /// <summary>
         /// 创建网络同步对象
         /// </summary>
         private void CreateNetworkSyncObject()
         {
+            if(String.IsNullOrWhiteSpace(ConfigurationManager.AppSettings["Synchronize.Player"]))
+            {
+
+            }
+
             //多端同步
             UDPClientSync = InstanceExtension.CreateNetworkClient("Synchronize.Slave", OnUdpSyncClientReceiveEventHandler);
             if (UDPClientSync == null)
                 UDPServerSync = InstanceExtension.CreateNetworkServer("Synchronize.Master", OnUdpSyncServerReceiveEventHandler);
+
             if (UDPServerSync != null && ushort.TryParse(ConfigurationManager.AppSettings["Synchronize.Calibr"], out ushort calibr)) SyncCalibr = calibr;
             if (UDPServerSync != null && ushort.TryParse(ConfigurationManager.AppSettings["Synchronize.WaitCount"], out ushort waitCount)) SyncWaitCount = waitCount;
-            if (UDPClientSync != null) Player.Volume = 0.0f;
+            if (UDPClientSync != null && SyncPlayer != null) SyncPlayer.Volume = 0.0f;
         }
 
         private void CheckNetworkSyncStatus()
         {
-            if (UDPServerSync == null) return;
+            if (SyncPlayer == null || UDPServerSync == null) return;
 
             List<IntPtr> clients = UDPServerSync.GetAllConnectionIds();
             if (clients.Count > 0)
             {
-                byte[] ct = BitConverter.GetBytes((int)Player.CurrentTime);  //4 Bytes  currentTime
+                byte[] ct = BitConverter.GetBytes((int)SyncPlayer.CurrentTime);  //4 Bytes  currentTime
                 Array.Copy(ct, 0, SyncMessage, 0, ct.Length);
 
                 byte[] sc = BitConverter.GetBytes(SyncCalibr);          //2 Bytes   校准误差时间ms
@@ -59,7 +77,7 @@ namespace MediaPalyerPro
 
                 // ... 
 
-                byte[] dt = BitConverter.GetBytes((int)Player.Duration);        //4 Bytes  视频的持续时长
+                byte[] dt = BitConverter.GetBytes((int)SyncPlayer.Duration);        //4 Bytes  视频的持续时长
                 Array.Copy(dt, 0, SyncMessage, SyncMessage.Length - dt.Length, dt.Length);
 
                 foreach (IntPtr client in clients)
@@ -69,8 +87,7 @@ namespace MediaPalyerPro
 
         private HandleResult OnUdpSyncClientReceiveEventHandler(IClient sender, byte[] data)
         {
-            if (UDPServerSync != null) return HandleResult.Ok;
-            if (data.Length != SyncMessage.Length) return HandleResult.Ok;
+            if (SyncPlayer == null || UDPServerSync != null || data.Length != SyncMessage.Length) return HandleResult.Ok;
 
             if (SyncWaitCount != 0)
             {
@@ -83,14 +100,14 @@ namespace MediaPalyerPro
             ushort sw = BitConverter.ToUInt16(data, 6);
             int dt = BitConverter.ToInt32(data, data.Length - 4);
 
-            int DT = (int)Player.Duration;
-            int CT = (int)Player.CurrentTime;
+            int DT = (int)SyncPlayer.Duration;
+            int CT = (int)SyncPlayer.CurrentTime;
             int Diff = (int)Math.Abs(CT - ct);
 
             if (Diff > sc && ct != 0 && CT != 0)
             {
                 SyncWaitCount = sw;
-                this.Dispatcher.Invoke(() => Player.SeekFastMilliSecond(ct + 4));
+                this.Dispatcher.Invoke(() => SyncPlayer.SeekFastMilliSecond(ct + 4));
 
                 //响应信息
                 SyncMessage[0] = 0x01;
@@ -109,8 +126,7 @@ namespace MediaPalyerPro
 
         private HandleResult OnUdpSyncServerReceiveEventHandler(IServer sender, IntPtr connId, byte[] data)
         {
-            if (UDPClientSync != null) return HandleResult.Ok;
-            if (data.Length != SyncMessage.Length) return HandleResult.Ok;
+            if (SyncPlayer == null || UDPClientSync != null || data.Length != SyncMessage.Length) return HandleResult.Ok;
 
             UDPServerSync.GetRemoteAddress(connId, out String ip, out ushort port);
             //处理响应信息
@@ -120,7 +136,7 @@ namespace MediaPalyerPro
                 int ct = BitConverter.ToInt32(data, 6);
                 int dt = BitConverter.ToInt32(data, data.Length - 4);
                 Log.Info($"远程主机(Slave) {ip}:{port} 校准时间，时间差：{diff}");
-                Log.Info($"Current(Master)Video: {Player.CurrentTime}/{Player.Duration}    SlaveVideo: {ct}/{dt}    Diff: {diff}");
+                Log.Info($"Current(Master)Video: {SyncPlayer.CurrentTime}/{SyncPlayer.Duration}    SlaveVideo: {ct}/{dt}    Diff: {diff}");
             }
 
             return HandleResult.Ok;

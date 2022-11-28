@@ -15,6 +15,8 @@ namespace MediaPalyerPro
         private int TargetTimerCount = 480;
         private int CurrentTimerCount = 0;
 
+        private int ID = -1;
+
         private void InitializeTimer()
         {
             Timer = new Timer();
@@ -25,6 +27,9 @@ namespace MediaPalyerPro
 
             if (int.TryParse(ConfigurationManager.AppSettings["Timer.Count"], out int count))
                 TargetTimerCount = count;
+
+            if (int.TryParse(ConfigurationManager.AppSettings["Timer.LoadItem"], out int id))
+                ID = id;
         }
 
         private void Timer_Elapsed(object sender, ElapsedEventArgs e)
@@ -39,12 +44,15 @@ namespace MediaPalyerPro
 #endif
             {
                 Timer.Stop();
-                if (CurrentItem.Attribute("ID")?.Value.ToString().Trim() == "0") return;
+                if (int.TryParse(CurrentItem.Attribute("ID")?.Value, out int id))
+                {
+                    if (ID == id) return;
+                }
 
                 this.Dispatcher.Invoke(() =>
                 {
-                    Log.Info($"Current Timer Count: {CurrentItem}");
-                    LoadItem(0);
+                    Log.Info($"Current Timer Count: {CurrentItem}  Load Item ID: {ID}");
+                    LoadItem(ID);
                 });
             }
         }
@@ -53,19 +61,6 @@ namespace MediaPalyerPro
         {
             CurrentTimerCount = 0;
             if(!Timer.Enabled)   Timer.Start();
-        }
-
-        public void Sleep(int ms)
-        {
-            System.Threading.Thread.Sleep(ms);
-        }
-
-        public void TestEcho(string message = null)
-        {
-            if (String.IsNullOrWhiteSpace(message))
-                Log.Info("This is test message, Hello World ...");
-            else
-                Log.Info(message);
         }
 
     }

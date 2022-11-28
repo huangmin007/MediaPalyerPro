@@ -67,6 +67,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="MainWindow_Extension.cs" />
     <Compile Include="MainWindow_NetwordSync.cs" />
     <Compile Include="MainWindow_OnDragEnter.cs" />
     <Compile Include="MainWindow_Timer.cs" />
@@ -154,7 +155,7 @@
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
-    <None Include="MediaItems.Config">
+    <None Include="MediaContents.Config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="SpaceCG\WindowsAPI\README.md" />

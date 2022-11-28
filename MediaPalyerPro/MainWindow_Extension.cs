@@ -1,0 +1,35 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows;
+
+namespace MediaPalyerPro
+{
+    public partial class MainWindow : Window
+    {
+        public void SetVolume(float volume)
+        {
+            MiddlePlayer.SetVolume(volume);
+            BackgroundPlayer.SetVolume(volume);
+            ForegroundPlayer.SetVolume(volume);
+        }
+
+        public void Sleep(int ms)
+        {
+            System.Threading.Thread.Sleep(ms);
+        }
+
+        public void TestEcho(string message = null)
+        {
+            if (String.IsNullOrWhiteSpace(message))
+                Log.Info("This is test message, Hello World ...");
+            else
+                Log.Info(message);
+        }
+
+
+
+    }
+}

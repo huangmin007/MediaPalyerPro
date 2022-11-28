@@ -25,19 +25,29 @@ namespace MediaPalyerPro
         {
             base.OnDragEnter(e);
 
+            MiddlePlayer.Pause();
+            BackgroundPlayer.Pause();
+            MiddleGroup.Visibility = Visibility.Hidden;
+            BackgroundGroup.Visibility = Visibility.Hidden;
+
             try
             {
                 var fileName = ((Array)e.Data.GetData(DataFormats.FileDrop)).GetValue(0).ToString();
 
                 if (IsVideoFile(fileName))
                 {
-                    Player.Visibility = Visibility.Visible;
-                    Player.Open(Sttplay.MediaPlayer.MediaType.Link, fileName);
+                    ForegroundGroup.Visibility = Visibility.Visible;
+                    ForegroundPlayer.Visibility = Visibility.Visible;
+
+                    ForegroundPlayer.Open(MediaType.Link, fileName);
                 }
                 else if (IsImageFile(fileName))
                 {
-                    Player.Visibility = Visibility.Visible;
-                    Player.Source = new BitmapImage(new Uri(fileName, UriKind.RelativeOrAbsolute));
+                    ForegroundPlayer.Close();
+                    ForegroundGroup.Visibility = Visibility.Visible;
+                    ForegroundPlayer.Visibility = Visibility.Visible;
+
+                    ForegroundPlayer.Source = new BitmapImage(new Uri(fileName, UriKind.RelativeOrAbsolute));
                 }
                 else
                 {

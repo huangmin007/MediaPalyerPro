@@ -120,44 +120,44 @@ namespace Sttplay.MediaPlayer
         /// <summary>
         /// Called when player demux succeeds or failed
         /// </summary>
-        public event Action<CaptureOpenResult, string, OpenCallbackContext> onCaptureOpenCallbackEvent;
+        public event Action<WPFSCPlayerPro, CaptureOpenResult, string, OpenCallbackContext> onCaptureOpenCallbackEvent;
 
         /// <summary>
         /// Called when player demux read pakcet failed
         /// </summary>
-        public event Action<string> onInterruptCallbackEvent;
+        public event Action<WPFSCPlayerPro, string> onInterruptCallbackEvent;
 
         /// <summary>
         /// Called when opening 
         /// </summary>
-        public event Action onOpenEvent;
+        public event Action<WPFSCPlayerPro> onOpenEvent;
 
         /// <summary>
         /// Called when closing 
         /// </summary>
-        public event Action onCloseEvent;
+        public event Action<WPFSCPlayerPro> onCloseEvent;
 
         /// <summary>
         /// Called when renderer is changed
         /// </summary>
-        public event Action<SCFrame> onRendererChangedEvent;
+        public event Action<WPFSCPlayerPro, SCFrame> onRendererChangedEvent;
 
         /// <summary>
         /// Called when the video has finished playing, whether looping or not 
         /// </summary>
-        public event Action onStreamFinishedEvent;
+        public event Action<WPFSCPlayerPro> onStreamFinishedEvent;
 
         /// <summary>
         /// Called after the first frame is drawn, if there is no video stream, this event will not be called 
         /// </summary>
-        public event Action<SCFrame> onFirstFrameRenderEvent;
+        public event Action<WPFSCPlayerPro, SCFrame> onFirstFrameRenderEvent;
 
         /// <summary>
         /// Called after each frame of video is drawn , if there is no video stream
         /// @Tip:
         /// The alignment of the frame here is 1-byte alignment
         /// </summary>
-        public event Action<SCFrame> onRenderFrameEvent;
+        public event Action<WPFSCPlayerPro, SCFrame> onRenderFrameEvent;
 
         /// <summary>
         /// File type to open
@@ -253,7 +253,7 @@ namespace Sttplay.MediaPlayer
             {
                 try
                 {
-                    onInterruptCallbackEvent(error);
+                    onInterruptCallbackEvent(this, error);
                 }
                 catch { }
             }
@@ -310,7 +310,7 @@ namespace Sttplay.MediaPlayer
                     {
                         try
                         {
-                            onRendererChangedEvent(frame);
+                            onRendererChangedEvent(this, frame);
                         }
                         catch { }
                     }
@@ -322,7 +322,7 @@ namespace Sttplay.MediaPlayer
                     {
                         try
                         {
-                            onFirstFrameRenderEvent(frame);
+                            onFirstFrameRenderEvent(this, frame);
                         }
                         catch { }
                     }
@@ -331,7 +331,7 @@ namespace Sttplay.MediaPlayer
                 {
                     try
                     {
-                        onRenderFrameEvent(frame);
+                        onRenderFrameEvent(this, frame);
                     }
                     catch { }
                 }
@@ -359,7 +359,7 @@ namespace Sttplay.MediaPlayer
             {
                 try
                 {
-                    onCaptureOpenCallbackEvent(result, error, context);
+                    onCaptureOpenCallbackEvent(this, result, error, context);
                 }
                 catch { }
             }
@@ -377,7 +377,7 @@ namespace Sttplay.MediaPlayer
             {
                 try
                 {
-                    onOpenEvent();
+                    onOpenEvent(this);
                 }
                 catch { }
             }
@@ -438,7 +438,7 @@ namespace Sttplay.MediaPlayer
             {
                 try
                 {
-                    onCloseEvent();
+                    onCloseEvent(this);
                 }
                 catch { }
             }
@@ -520,7 +520,7 @@ namespace Sttplay.MediaPlayer
             {
                 try
                 {
-                    onStreamFinishedEvent();
+                    onStreamFinishedEvent(this);
                 }
                 catch { }
             }
