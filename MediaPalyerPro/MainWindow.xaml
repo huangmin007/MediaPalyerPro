@@ -20,6 +20,7 @@
             <Setter Property="Height" Value="50"/>
             <Setter Property="Background" Value="#640000FF"/>
             <Setter Property="Foreground" Value="#6400FF00"/>
+            <Setter Property="ToolTipService.IsEnabled" Value="False"/>
             <EventSetter Event="Click" Handler="Button_Click"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -75,7 +76,7 @@
                     onFirstFrameRenderEvent="OnFirstFrameRenderEventHandler" 
                     />
 
-                <Canvas x:Name="BackgroundButtons">
+                <Canvas x:Name="BackgroundButtons" ToolTipService.IsEnabled="False">
                 </Canvas>
             </Grid>
 
@@ -94,7 +95,7 @@
                     onFirstFrameRenderEvent="OnFirstFrameRenderEventHandler"
                     />
 
-                <Canvas x:Name="MiddleButtons"></Canvas>
+                <Canvas x:Name="MiddleButtons" ToolTipService.IsEnabled="False"></Canvas>
             </Grid>
 
             <!-- ForegroundGroup -->
@@ -112,7 +113,7 @@
                     onFirstFrameRenderEvent="OnFirstFrameRenderEventHandler"
                     />
 
-                <Canvas x:Name="ForegroundButtons">
+                <Canvas x:Name="ForegroundButtons" ToolTipService.IsEnabled="False">
                     <!--Visibility="{Binding Visibility, ElementName=Player}"
                     <Button Name="Btn_00" Width="100" Height="100" FontSize="50" Margin="150,150">
                         <Button.Background>

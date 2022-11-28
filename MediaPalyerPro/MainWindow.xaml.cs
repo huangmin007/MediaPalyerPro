@@ -327,6 +327,8 @@ namespace MediaPalyerPro
             ForegroundPlayer.Pause();
             BackgroundPlayer.Pause();
 
+            String id = CurrentItem.Attribute("ID")?.Value;
+
             try
             {
                 foreach (XElement element in item.Elements())
@@ -355,7 +357,7 @@ namespace MediaPalyerPro
                         Panel PanelButtons = (Panel)uiElement;
                         //Clear
                         PanelButtons.Children.Clear();
-
+                        PanelButtons.ToolTip = id;
                         //Add
                         foreach (XElement btnElement in element.Elements("Button"))
                         {
@@ -363,6 +365,8 @@ namespace MediaPalyerPro
                             XmlReader xmlReader = XmlReader.Create(stringReader, settings, context);
                             XamlXmlReader xamlXmlReader = new XamlXmlReader(xmlReader, xamlXmlReaderSettings);
                             Button button = (Button)System.Windows.Markup.XamlReader.Load(xamlXmlReader);
+                            button.ToolTip = String.Format($"{id}.{PanelButtons.Name}.{button.Name}");
+                            Console.WriteLine(button.ToolTip);
                             PanelButtons.Children.Add(button);
                         }
                     }
@@ -655,7 +659,7 @@ namespace MediaPalyerPro
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             Button button = (Button)sender;
-            Log.Info($"Click Button: {button.Name}");
+            Log.Info($"Click Button: {button.Name} tip:{button.ToolTip}");
 
             TimerRestart();
             CallButtonEvent(button);
