@@ -659,16 +659,23 @@ namespace MediaPalyerPro
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             Button button = (Button)sender;
-            Log.Info($"Click Button: {button.Name} tip:{button.ToolTip}");
+            Log.Info($"Click Button: {button.Name}  ToolTip: {button.ToolTip}");
 
             TimerRestart();
-            CallButtonEvent(button);
+            if (button.ToolTip != null)
+            {
+                String[] tips = button.ToolTip.ToString().Split('.');
+                CallButtonEvent(int.Parse(tips[0]), tips[1], tips[2]);
+            }
+            else
+            {
+                CallButtonEvent(button);
+            }
         }
         private void Window_MouseDown(object sender, MouseButtonEventArgs e)
         {
             TimerRestart();
         }
-
 
         /// <summary>
         /// 打印 Player 属性信息
