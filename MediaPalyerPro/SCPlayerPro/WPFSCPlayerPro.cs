@@ -466,6 +466,20 @@ namespace Sttplay.MediaPlayer
             core.Volume = Volume;
         }
 
+        public void VolumeUp()
+        {
+            if (core == null) return;
+            this.Volume = this.Volume >= 1.0f ? 1.0f : this.Volume + 0.1f;
+            core.Volume = Volume;
+        }
+
+        public void VolumeDown()
+        {
+            if (core == null) return;
+            this.Volume = this.Volume <= 0.0f ? 0.0f : this.Volume - 0.1f;
+            core.Volume = Volume;
+        }
+
         /// <summary>
         /// Seek to key frame quickly according to percentage
         /// </summary>

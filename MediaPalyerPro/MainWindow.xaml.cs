@@ -91,7 +91,7 @@ namespace MediaPalyerPro
             base.OnKeyUp(e);
             if (e.IsRepeat) return;
 
-            TimerRestart();
+            TimerReset();
             Log.Info($"OnKeyDown: {e.KeyboardDevice.Modifiers} - {e.Key}");
 
             switch (e.Key)
@@ -141,10 +141,11 @@ namespace MediaPalyerPro
                 case Key.Down:
                 case Key.Right:
                     if (CurrentItem == null) return;
+
                     if (CurrentItem.NextNode != null)
                         LoadItem((XElement)CurrentItem.NextNode);
                     else
-                        LoadItem((XElement)CurrentItem.Parent.FirstNode);
+                        LoadItem((XElement)(CurrentItem.Parent.FirstNode));
                     break;
                 case Key.Up:
                 case Key.Left:
@@ -152,7 +153,7 @@ namespace MediaPalyerPro
                     if (CurrentItem.PreviousNode != null)
                         LoadItem((XElement)CurrentItem.PreviousNode);
                     else
-                        LoadItem((XElement)CurrentItem.Parent.LastNode);
+                        LoadItem((XElement)(CurrentItem.Parent.LastNode));
                     break;
 
                 case Key.Space:
@@ -183,6 +184,8 @@ namespace MediaPalyerPro
                 case Key.Escape:
                     this.Close();
                     Application.Current.Shutdown(0);
+                    //this.WindowState = WindowState.Normal;
+                    //this.WindowStyle = WindowStyle.SingleBorderWindow;
                     break;
             }
         }
@@ -214,7 +217,7 @@ namespace MediaPalyerPro
             String message = Encoding.UTF8.GetString(data);
             Log.Info($"Client Receive Data: {message}");
 
-            TimerRestart();
+            TimerReset();
             return HandleResult.Ok;
         }
         private HandleResult OnServerReceiveEventHandler(IServer sender, IntPtr connId, byte[] data)
@@ -222,7 +225,7 @@ namespace MediaPalyerPro
             String message = Encoding.UTF8.GetString(data);
             Log.Info($"Server Receive Data: {message}");
 
-            TimerRestart();
+            TimerReset();
             XElement element = null;
 
             try
@@ -263,7 +266,13 @@ namespace MediaPalyerPro
 
             try
             {
-                RootElement = XElement.Load(fileName);
+                XmlReaderSettings settings = new XmlReaderSettings();
+                settings.IgnoreComments = true;
+                settings.IgnoreWhitespace = true;
+                XmlReader reader = XmlReader.Create(fileName, settings);
+
+                //RootElement = XElement.Load(fileName);
+                RootElement = XElement.Load(reader, LoadOptions.None);
                 ListItems = RootElement.Elements("Item");
             }
             catch (Exception ex)
@@ -366,7 +375,7 @@ namespace MediaPalyerPro
                             XamlXmlReader xamlXmlReader = new XamlXmlReader(xmlReader, xamlXmlReaderSettings);
                             Button button = (Button)System.Windows.Markup.XamlReader.Load(xamlXmlReader);
                             button.ToolTip = String.Format($"{id}.{PanelButtons.Name}.{button.Name}");
-                            Console.WriteLine(button.ToolTip);
+                            //Console.WriteLine(button.ToolTip);
                             PanelButtons.Children.Add(button);
                         }
                     }
@@ -528,6 +537,12 @@ namespace MediaPalyerPro
                 //Method
                 if (!String.IsNullOrWhiteSpace(action.Attribute("Method")?.Value))
                 {
+                    if(action.Attribute("Method").Value == "Sleep")
+                    {
+                        InstanceExtension.CallInstanceMethod(target, action.Attribute("Method").Value, StringExtension.ConvertParameters(action.Attribute("Params").Value));
+                        return;
+                    }
+
                     Task.Run(() =>
                     {
                         this.Dispatcher.Invoke(() =>
@@ -661,7 +676,7 @@ namespace MediaPalyerPro
             Button button = (Button)sender;
             Log.Info($"Click Button: {button.Name}  ToolTip: {button.ToolTip}");
 
-            TimerRestart();
+            TimerReset();
             if (button.ToolTip != null)
             {
                 String[] tips = button.ToolTip.ToString().Split('.');
@@ -674,7 +689,7 @@ namespace MediaPalyerPro
         }
         private void Window_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            TimerRestart();
+            TimerReset();
         }
 
         /// <summary>

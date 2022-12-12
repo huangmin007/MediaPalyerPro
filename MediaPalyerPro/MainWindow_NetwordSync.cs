@@ -37,17 +37,23 @@ namespace MediaPalyerPro
         /// <summary>
         /// 指定的多端同步播放器
         /// </summary>
-        private WPFSCPlayerPro SyncPlayer;
+        private WPFSCPlayerPro SyncPlayer = null;
 
         /// <summary>
         /// 创建网络同步对象
         /// </summary>
         private void CreateNetworkSyncObject()
         {
-            if(String.IsNullOrWhiteSpace(ConfigurationManager.AppSettings["Synchronize.Player"]))
+            if(!String.IsNullOrWhiteSpace(ConfigurationManager.AppSettings["Synchronize.Player"]))
             {
-
+                object player = InstanceExtension.GetInstanceFieldObject(this, ConfigurationManager.AppSettings["Synchronize.Player"]);
+                if(player.GetType() == typeof(WPFSCPlayerPro))
+                {
+                    SyncPlayer = (WPFSCPlayerPro)player;
+                }
             }
+
+            if (SyncPlayer == null) return;
 
             //多端同步
             UDPClientSync = InstanceExtension.CreateNetworkClient("Synchronize.Slave", OnUdpSyncClientReceiveEventHandler);

@@ -16,6 +16,26 @@ namespace MediaPalyerPro
             ForegroundPlayer.SetVolume(volume);
         }
 
+        /// <summary>
+        /// 音量增加一次
+        /// </summary>
+        public void VolumeUp()
+        {
+            MiddlePlayer.VolumeUp();
+            BackgroundPlayer.VolumeUp();
+            ForegroundPlayer.VolumeUp();
+        }
+        /// <summary>
+        /// 音量减少一次
+        /// </summary>
+        public void VolumeDown()
+        {
+            MiddlePlayer.VolumeDown();
+            BackgroundPlayer.VolumeDown();
+            ForegroundPlayer.VolumeDown();
+        }
+
+
         public void Sleep(int ms)
         {
             System.Threading.Thread.Sleep(ms);
@@ -28,8 +48,5 @@ namespace MediaPalyerPro
             else
                 Log.Info(message);
         }
-
-
-
     }
 }
