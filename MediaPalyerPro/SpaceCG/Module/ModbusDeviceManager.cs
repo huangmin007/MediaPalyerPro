@@ -13,10 +13,28 @@ using SpaceCG.Generic;
 
 namespace SpaceCG.Module
 {
+    public abstract class ModbusDevice
+    {
+        /// <summary>
+        /// 设备地址
+        /// </summary>
+        public byte Address { get; protected set; } = 0x00;
+
+        /// <summary>
+        /// 设备输入状态存储器
+        /// </summary>
+        public Dictionary<ushort, ushort> Inputs { get; protected set; } = new Dictionary<ushort, ushort>();
+
+        /// <summary>
+        /// 设备输出状态存储器
+        /// </summary>
+        public Dictionary<ushort, ushort> Outputs { get; protected set; } = new Dictionary<ushort, ushort>();
+    }
+
     /// <summary>
     /// Modbus IO 设备
     /// </summary>
-    class ModbusIODevice
+    public class ModbusIODevice
     {
         /// <summary>
         /// 设备地址
@@ -26,20 +44,20 @@ namespace SpaceCG.Module
         /// <summary>
         /// 数字输入信号状态集合
         /// </summary>
-        public bool[] DigitalOutputStatus { get; private set; }
+        public bool[] DigitalOutputStatus { get; internal set; }
         /// <summary>
         /// 数字输出信号状态集合
         /// </summary>
-        public bool[] DigitalInputStatus { get; private set; }
+        public bool[] DigitalInputStatus { get; internal set; }
 
         /// <summary>
         /// 模拟信号输入状态集合
         /// </summary>
-        public ushort[] AnalogInputStatus { get; private set; }
+        public ushort[] AnalogInputStatus { get; internal set; }
         /// <summary>
         /// 模拟信号输出状态集合
         /// </summary>
-        public ushort[] AnalogOutputStatus { get; private set; }
+        public ushort[] AnalogOutputStatus { get; internal set; }
 
         /// <summary>
         /// 开启输入实时读取
@@ -76,23 +94,31 @@ namespace SpaceCG.Module
         }
     }
 
+    public class ModbusMethodInfo
+    {
+        public string MethodName;
+        public byte FuncCode;
+        public byte SlaveAddress;
+        public ushort StartAddress;
+        public object Value;
+    }
+
     /// <summary>
     /// Modbus 传输设备
     /// </summary>
-    class ModbusTransportDevice : IDisposable
+    public class ModbusTransportDevice : IDisposable
     {
-        private static readonly log4net.ILog Log = log4net.LogManager.GetLogger("ModbusTransportDevice");
+        protected static readonly log4net.ILog Log = log4net.LogManager.GetLogger("ModbusTransportDevice");
 
         public String Key { get; private set; }
 
         public event Action<ModbusTransportDevice, byte, ushort, ushort> InputChangeEvent;
         public event Action<ModbusTransportDevice, byte, ushort, ushort> OutputChangeEvent;
 
-        //internal NModbus.IModbusMaster master;
-        internal Modbus.Device.IModbusMaster master;
         private bool IsRunning = false;
+        internal Modbus.Device.IModbusMaster master;
 
-        public List<ModbusIODevice> Devices { get; private set; } = new List<ModbusIODevice>(8);
+        protected List<ModbusIODevice> Devices { get; private set; } = new List<ModbusIODevice>(8);
 
         public int ReadTimeout
         {
@@ -117,16 +143,10 @@ namespace SpaceCG.Module
             }
         }
 
-        class methodInfo
-        {
-            public string methodName;
-            //public byte funcCode;
-            public byte slaveAddress;
-            public ushort startAddress;
-            public object data;
-        }
-
-        private ConcurrentQueue<methodInfo> queues = new ConcurrentQueue<methodInfo>();
+        /// <summary>
+        /// Modbus写参数队列
+        /// </summary>
+        protected ConcurrentQueue<ModbusMethodInfo> Queues = new ConcurrentQueue<ModbusMethodInfo>();
 
         /// <summary>
         /// Modbus Transport
@@ -146,12 +166,29 @@ namespace SpaceCG.Module
         }
 
         /// <summary>
-        /// 添加设备
+        /// 添加 Modbus 设备
         /// </summary>
         /// <param name="device"></param>
-        public void AddDevice(ModbusIODevice device)
+        public bool AddDevice(ModbusIODevice device)
         {
+            foreach (ModbusIODevice dev in Devices)
+                if (dev.Address == device.Address) return false;
+
             Devices.Add(device);
+            return true;
+        }
+
+        /// <summary>
+        /// 跟据设备地址获取设备
+        /// </summary>
+        /// <param name="address"></param>
+        /// <returns></returns>
+        public ModbusIODevice GetDevice(byte address)
+        {
+            foreach (ModbusIODevice device in Devices)
+                if (device.Address == address) return device;
+
+            return null;
         }
 
         /// <summary>
@@ -203,7 +240,7 @@ namespace SpaceCG.Module
         /// </summary>
         /// <param name="device"></param>
         /// <returns></returns>
-        private bool ReadDigitalInputStatus(ModbusIODevice device)
+        protected bool ReadDigitalInputStatus(ModbusIODevice device)
         {
             if (!device.EnabledInputRead || !IsRunning) return false;
             if (device.DigitalInputStatus?.Length <= 0) return false;
@@ -245,7 +282,7 @@ namespace SpaceCG.Module
         /// </summary>
         /// <param name="device"></param>
         /// <returns></returns>
-        private bool ReadDigitalOutputStatus(ModbusIODevice device)
+        protected bool ReadDigitalOutputStatus(ModbusIODevice device)
         {
             if (!device.EnabledOutputRead || !IsRunning) return false;
             if (device.DigitalOutputStatus?.Length <= 0) return false;
@@ -286,7 +323,7 @@ namespace SpaceCG.Module
         /// </summary>
         /// <param name="device"></param>
         /// <returns></returns>
-        private bool ReadAnalogInputStatus(ModbusIODevice device)
+        protected bool ReadAnalogInputStatus(ModbusIODevice device)
         {
             if (!device.EnabledInputRead || !IsRunning) return false;
             if (device.AnalogInputStatus?.Length <= 0) return false;
@@ -327,7 +364,7 @@ namespace SpaceCG.Module
         /// </summary>
         /// <param name="device"></param>
         /// <returns></returns>
-        private bool ReadAnalogOutputStatus(ModbusIODevice device)
+        protected bool ReadAnalogOutputStatus(ModbusIODevice device)
         {
             if (!device.EnabledOutputRead || !IsRunning) return false;
             if (device.AnalogOutputStatus?.Length <= 0) return false;
@@ -366,6 +403,51 @@ namespace SpaceCG.Module
         }
 
         /// <summary>
+        /// 等待间隔时间
+        /// </summary>
+        /// <param name="millisecondsTimeout"></param>
+        public void Sleep(int millisecondsTimeout)
+        {
+            ModbusMethodInfo info = new ModbusMethodInfo
+            {
+                MethodName = "Sleep",
+                SlaveAddress = 0,
+                StartAddress = 0,
+                Value = millisecondsTimeout,
+            };
+        }
+
+        /// <summary>
+        /// 翻转单线圈
+        /// </summary>
+        /// <param name="address"></param>
+        /// <param name="startAddress"></param>
+        public void TurnSingleCoil(byte address, ushort startAddress)
+        {
+            TurnMultipleCoilis(address, startAddress, 1);
+        }
+
+        /// <summary>
+        /// 翻转多线圈
+        /// </summary>
+        /// <param name="address"></param>
+        /// <param name="startAddress"></param>
+        /// <param name="length"></param>
+        public void TurnMultipleCoilis(byte address, ushort startAddress, byte length)
+        {
+            ModbusIODevice device = this.GetDevice(address);
+            if (device == null) return;
+
+            bool[] value = new bool[length];
+            for (int i = startAddress; i < startAddress + length; i++)
+            {
+                value[i - startAddress] = !device.DigitalOutputStatus[startAddress];
+            }
+
+            WriteMultipleCoils(address, startAddress, value);
+        }
+
+        /// <summary>
         /// 写单个线圈状态
         /// </summary>
         /// <param name="address"></param>
@@ -373,15 +455,15 @@ namespace SpaceCG.Module
         /// <param name="value"></param>
         public void WriteSingleCoil(byte address, ushort startAddress, bool value)
         {
-            methodInfo info = new methodInfo
+            ModbusMethodInfo info = new ModbusMethodInfo
             {
-                methodName = "WriteSingleCoil",
-                slaveAddress = address,
-                startAddress = startAddress,
-                data = value,
+                MethodName = "WriteSingleCoil",
+                SlaveAddress = address,
+                StartAddress = startAddress,
+                Value = value,
             };
 
-            queues.Enqueue(info);
+            Queues.Enqueue(info);
         }
         /// <summary>
         /// 写多个线圈状态
@@ -391,15 +473,15 @@ namespace SpaceCG.Module
         /// <param name="value"></param>
         public void WriteMultipleCoils(byte address, ushort startAddress, params bool[] value)
         {
-            methodInfo info = new methodInfo
+            ModbusMethodInfo info = new ModbusMethodInfo
             {
-                methodName = "WriteMultipleCoils",
-                slaveAddress = address,
-                startAddress = startAddress,
-                data = value,
+                MethodName = "WriteMultipleCoils",
+                SlaveAddress = address,
+                StartAddress = startAddress,
+                Value = value,
             };
 
-            queues.Enqueue(info);
+            Queues.Enqueue(info);
         }
         /// <summary>
         /// 写单个保持寄存器
@@ -409,15 +491,15 @@ namespace SpaceCG.Module
         /// <param name="value"></param>
         public void WriteSingleRegister(byte address, ushort startAddress, ushort value)
         {
-            methodInfo info = new methodInfo
+            ModbusMethodInfo info = new ModbusMethodInfo
             {
-                methodName = "WriteSingleRegister",
-                slaveAddress = address,
-                startAddress = startAddress,
-                data = value,
+                MethodName = "WriteSingleRegister",
+                SlaveAddress = address,
+                StartAddress = startAddress,
+                Value = value,
             };
 
-            queues.Enqueue(info);
+            Queues.Enqueue(info);
         }
         /// <summary>
         /// 写多个保持寄存器
@@ -427,42 +509,66 @@ namespace SpaceCG.Module
         /// <param name="value"></param>
         public void WriteMultipleRegisters(byte address, ushort startAddress, ushort[] value)
         {
-            methodInfo info = new methodInfo
+            ModbusMethodInfo info = new ModbusMethodInfo
             {
-                methodName = "WriteMultipleRegisters",
-                slaveAddress = address,
-                startAddress = startAddress,
-                data = value,
+                MethodName = "WriteMultipleRegisters",
+                SlaveAddress = address,
+                StartAddress = startAddress,
+                Value = value,
             };
 
-            queues.Enqueue(info);
+            Queues.Enqueue(info);
         }
 
-        private void HandlerWriteQueues()
+        protected void HandlerWriteQueues()
         {
-            if (queues.Count() <= 0 || !IsRunning) return;
+            if (Queues.Count() <= 0 || !IsRunning) return;
 
-            methodInfo info;
-            if (!queues.TryDequeue(out info)) return;
+            ModbusMethodInfo info;
+            ModbusIODevice device;
+            if (!Queues.TryDequeue(out info)) return;
 
             try
             {
-                switch (info.methodName)
+                switch (info.MethodName)
                 {
                     case "WriteSingleCoil":
-                        master.WriteSingleCoil(info.slaveAddress, info.startAddress, (bool)info.data);
+                        master.WriteSingleCoil(info.SlaveAddress, info.StartAddress, (bool)info.Value);
+
+                        device = GetDevice(info.SlaveAddress);
+                        if (device == null) return;
+                        device.DigitalOutputStatus[info.StartAddress] = (bool)info.Value;
                         break;
 
                     case "WriteMultipleCoils":
-                        master.WriteMultipleCoils(info.slaveAddress, info.startAddress, (bool[])info.data);
+                        bool[] value = (bool[])info.Value;
+                        master.WriteMultipleCoils(info.SlaveAddress, info.StartAddress, value);
+
+                        device = GetDevice(info.SlaveAddress);
+                        if (device == null) return;
+                        Array.Copy(value, 0, device.DigitalOutputStatus, info.StartAddress, value.Length);
                         break;
 
                     case "WriteSingleRegister":
-                        master.WriteSingleRegister(info.slaveAddress, info.startAddress, (ushort)info.data);
+                        master.WriteSingleRegister(info.SlaveAddress, info.StartAddress, (ushort)info.Value);
+
+                        device = GetDevice(info.SlaveAddress);
+                        if (device == null) return;
+                        device.AnalogOutputStatus[info.StartAddress] = (ushort)info.Value;
                         break;
 
                     case "WriteMultipleRegisters":
-                        master.WriteMultipleRegisters(info.slaveAddress, info.startAddress, (ushort[])info.data);
+                        ushort[] aValue = (ushort[])info.Value;
+                        master.WriteMultipleRegisters(info.SlaveAddress, info.StartAddress, aValue);
+
+                        device = GetDevice(info.SlaveAddress);
+                        if (device == null) return;
+                        Array.Copy(aValue, 0, device.AnalogOutputStatus, info.StartAddress, aValue.Length);
+                        break;
+
+                    case "Sleep":
+                        if ((int)info.Value > 0)
+                            Thread.Sleep((int)info.Value);
                         break;
                 }
 
@@ -479,13 +585,24 @@ namespace SpaceCG.Module
     /// <summary>
     /// Modbus Device Manager 对象
     /// </summary>
-    public class ModbusDeviceManager : IDisposable
+    public partial class ModbusDeviceManager : IDisposable
     {
-        private static readonly log4net.ILog Log = log4net.LogManager.GetLogger("ModbusDeviceManager");
+        protected static readonly log4net.ILog Log = log4net.LogManager.GetLogger("ModbusDeviceManager");
 
-        private XElement DevicesList = null;        
-        private List<ModbusTransportDevice> transportDevices = new List<ModbusTransportDevice>(8);
-        private ConcurrentDictionary<String, IDisposable> AccessObjects = new ConcurrentDictionary<string, IDisposable>();
+        /// <summary>
+        /// Modbus Config Items 
+        /// </summary>
+        public XElement ModbusConfigItems { get; private set; } = null;
+
+        /// <summary>
+        /// Transport Devices 列表
+        /// </summary>
+        public List<ModbusTransportDevice> TransportDevices { get; private set; } = new List<ModbusTransportDevice>(8);
+
+        /// <summary>
+        /// 可访问对象列表
+        /// </summary>
+        public ConcurrentDictionary<String, IDisposable> AccessObjects { get; private set; } = new ConcurrentDictionary<string, IDisposable>();
 
         public static readonly byte[] ReturnOK = new byte[4] { 0x4F, 0x4B, 0x0D, 0x0A }; //OK\r\n
         public static readonly byte[] ReturnError = new byte[7] { 0x45, 0x52, 0x52, 0x4F, 0x52, 0x0D, 0x0A }; //ERROR\r\n
@@ -493,42 +610,62 @@ namespace SpaceCG.Module
         /// <summary>
         /// Modbus 设备管理对象
         /// <para>包含配置键：Modbus.Master.DIO, Network.Server.Interface</para>
-        /// <para>包含可选配置键：Modbus.Master.LMS, Network.Client.Demo, ...</para>
+        /// <para>包含可选配置键：Modbus.Master.LMS, Network.Client.Interface, ...</para>
         /// </summary>
-        public ModbusDeviceManager()
+        public ModbusDeviceManager(String accessKey = null)
         {
-            Modbus.Device.IModbusMaster ModbusLMS = InstanceExtension.CreateNModbus4Master("Modbus.Master.LMS");
+            Modbus.Device.IModbusMaster ModbusLMS = InstanceExtension.CreateNModbus4Master("Modbus.Master.LCMS");
             Modbus.Device.IModbusMaster ModbusDIO = InstanceExtension.CreateNModbus4Master("Modbus.Master.DIO");
-            if (ModbusLMS != null) AccessObjects.TryAdd("Modbus.Master.LMS", ModbusLMS);
+            if (ModbusLMS != null) AccessObjects.TryAdd("Modbus.Master.LCMS", ModbusLMS);
             if (ModbusDIO != null) AccessObjects.TryAdd("Modbus.Master.DIO", ModbusDIO);
 
             HPSocket.IServer NetworkServer = InstanceExtension.CreateNetworkServer("Network.Server.Interface", OnServerReceiveEventHandler);
-            HPSocket.IClient NetworkClient = InstanceExtension.CreateNetworkClient("Network.Client.Demo", OnClientReceiveEventHandler);
+            HPSocket.IClient NetworkClient = InstanceExtension.CreateNetworkClient("Network.Client.Interface", OnClientReceiveEventHandler);
             if (NetworkServer != null) AccessObjects.TryAdd("Network.Server.Interface", NetworkServer);
-            if (NetworkClient != null) AccessObjects.TryAdd("Network.Client.Demo", NetworkClient);
+            if (NetworkClient != null) AccessObjects.TryAdd("Network.Client.Interface", NetworkClient);
 
             SerialPort SerialPort = InstanceExtension.CreateSerialPort("Serial.PortName", null);
             if (SerialPort != null) AccessObjects.TryAdd("Serial.PortName", SerialPort);
+
+            if (!String.IsNullOrWhiteSpace(accessKey)) AccessObjects.TryAdd(accessKey, this);
         }
 
-        private void KeyboardHookEx_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        /// <summary>
+        /// 添加传输设备
+        /// </summary>
+        /// <param name="device"></param>
+        /// <returns></returns>
+        public bool AddModbusTransportDevice(ModbusTransportDevice device)
         {
-            Log.Debug($"key down::{ e.Key}");
+            foreach (ModbusTransportDevice td in TransportDevices)
+                if (td.Key == device.Key) return false;
+
+            TransportDevices.Add(device);
+            return true;
         }
 
-        private void KeyboardHookEx_KeyPress(object sender, System.Windows.Input.KeyEventArgs e)
+        /// <summary>
+        /// 添加传输设备
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public ModbusTransportDevice GetModbusTransportDevice(string key)
         {
-            Log.Debug($"key press::{ e.Key}");
+            foreach (ModbusTransportDevice td in TransportDevices)
+                if (td.Key == key) return td;
+
+            return null;
         }
 
-        private HPSocket.HandleResult OnServerReceiveEventHandler(HPSocket.IServer sender, IntPtr connId, byte[] data)
+
+        protected HPSocket.HandleResult OnServerReceiveEventHandler(HPSocket.IServer sender, IntPtr connId, byte[] data)
         {
             ReceiveNetworkMessageHandler(Encoding.UTF8.GetString(data));
             return HPSocket.HandleResult.Ok;
         }
-        private HPSocket.HandleResult OnClientReceiveEventHandler(HPSocket.IClient sender, byte[] data)
+        protected HPSocket.HandleResult OnClientReceiveEventHandler(HPSocket.IClient sender, byte[] data)
         {
-            ReceiveNetworkMessageHandler(Encoding.UTF8.GetString(data));            
+            ReceiveNetworkMessageHandler(Encoding.UTF8.GetString(data));
             return HPSocket.HandleResult.Ok;
         }
         public void ReceiveNetworkMessageHandler(String message)
@@ -556,7 +693,7 @@ namespace SpaceCG.Module
                 Log.Warn($"添加可访问对象 {key}:{obj} 失败");
                 return false;
             }
-            return AccessObjects.TryAdd(key, obj); 
+            return AccessObjects.TryAdd(key, obj);
         }
         /// <summary>
         /// 清除所有外部可访问对象
@@ -564,7 +701,7 @@ namespace SpaceCG.Module
         public void DisposeAccessObjects()
         {
             InstanceExtension.DisposeAccessObjects(AccessObjects);
-            AccessObjects.Clear();
+            AccessObjects?.Clear();
             AccessObjects = null;
         }
 
@@ -576,12 +713,12 @@ namespace SpaceCG.Module
         {
             if (!File.Exists(configFile))
             {
-                Log.Error($"指定的配置文件不存在 {configFile}");
+                Log.Error($"指定的配置文件不存在 {configFile}, 禁用 Modbus Device Manager 模块.");
                 return;
             }
 
             //Reset Clear Handler
-            foreach (var modbus in transportDevices)
+            foreach (var modbus in TransportDevices)
             {
                 if (AccessObjects.ContainsKey(modbus.Key))
                     AccessObjects[modbus.Key] = modbus.master;
@@ -590,10 +727,10 @@ namespace SpaceCG.Module
 
                 modbus.StopListener();
             }
-            transportDevices.Clear();
+            TransportDevices.Clear();
 
-            DevicesList = XElement.Load(configFile);
-            IEnumerable<XElement> BusElements = DevicesList.Descendants("Bus");
+            ModbusConfigItems = XElement.Load(configFile);
+            IEnumerable<XElement> BusElements = ModbusConfigItems.Elements("Modbus");
             for (int i = 0; i < BusElements.Count(); i++)
             {
                 XElement busElement = BusElements.ElementAt(i);
@@ -622,7 +759,7 @@ namespace SpaceCG.Module
                     modbus.WriteTimeout = writeTimeout;
 
                 //Device
-                IEnumerable<XElement> devices = busElement.Descendants("Device");
+                IEnumerable<XElement> devices = busElement.Elements("Device");
                 for (int j = 0; j < devices.Count(); j++)
                 {
                     XElement device = devices.ElementAt(j);
@@ -672,18 +809,58 @@ namespace SpaceCG.Module
                 else
                     AccessObjects.TryAdd(key, modbus);
 
-                transportDevices.Add(modbus);
+                TransportDevices.Add(modbus);
                 modbus.StartListener();
             }
         }
 
-        private void Modbus_InputChangeEvent(ModbusTransportDevice modbus, byte address, ushort index, ushort value)
+        protected void Modbus_InputChangeEvent(ModbusTransportDevice modbus, byte address, ushort index, ushort value)
         {
             InputOutputChange(modbus.Key, "InputChange", address, index, value);
         }
-        private void Modbus_OutputChangeEvent(ModbusTransportDevice modbus, byte address, ushort index, ushort value)
+        protected void Modbus_OutputChangeEvent(ModbusTransportDevice modbus, byte address, ushort index, ushort value)
         {
             InputOutputChange(modbus.Key, "OutputChange", address, index, value);
+        }
+
+        public void InputOutputChange(string hotKey)
+        {
+            if (ModbusConfigItems == null) return;
+
+            Task.Run(() =>
+            {
+                var elements = from modbus in ModbusConfigItems.Elements()
+                               from ev in modbus.Elements("Events")
+                               where ev.Attribute("HotKey")?.Value == hotKey
+                               select ev;
+
+                if (elements?.Count() > 0)
+                    Log.Info($"HotKey: {hotKey}");
+
+                foreach (XElement events in elements)
+                {
+                    foreach (XElement action in events.Elements("Action"))
+                    {
+                        if (action.Attribute("TargetKey") == null) continue;
+
+                        String objKey = action.Attribute("TargetKey")?.Value;
+                        if (!AccessObjects.TryGetValue(objKey, out IDisposable targetObj))
+                        {
+                            Log.Warn($"未找到时目标对象实例 {objKey} ");
+                            continue;
+                        }
+
+                        //Method
+                        String methodName = action.Attribute("Method")?.Value;
+                        if (String.IsNullOrWhiteSpace(methodName)) continue;
+
+                        if (!String.IsNullOrWhiteSpace(action.Attribute("Params")?.Value))
+                            InstanceExtension.CallInstanceMethod(targetObj, methodName, StringExtension.ConvertParameters(action.Attribute("Params").Value));
+                        else
+                            InstanceExtension.CallInstanceMethod(targetObj, methodName);
+                    }
+                }
+            });
         }
 
         /// <summary>
@@ -696,14 +873,15 @@ namespace SpaceCG.Module
         /// <param name="value"></param>
         public void InputOutputChange(string busKey, string eventType, byte slaveAddress, ushort startAddress, ushort value)
         {
+            if (ModbusConfigItems == null) return;
             Task.Run(() =>
             {
                 if (Log.IsDebugEnabled)
                     Log.Debug($"{busKey}, {eventType}, {slaveAddress}, {startAddress}, {value}");
 
-                var elements = from bus in DevicesList.Descendants()
-                               where bus.Attribute("Key")?.Value == busKey
-                               from ev in bus.Descendants("Events")
+                var elements = from modbus in ModbusConfigItems.Elements()
+                               where modbus.Attribute("Key")?.Value == busKey
+                               from ev in modbus.Elements("Events")
                                where ev.Attribute("Name")?.Value == eventType &&
                                ev.Attribute("Address")?.Value == slaveAddress.ToString() &&
                                ev.Attribute("Index")?.Value == startAddress.ToString() &&
@@ -716,7 +894,7 @@ namespace SpaceCG.Module
                 {
                     foreach (XElement action in events)
                     {
-                        
+
                         if (action.Attribute("TargetKey") == null) continue;
 
                         String objKey = action.Attribute("TargetKey")?.Value;
@@ -741,12 +919,13 @@ namespace SpaceCG.Module
 
         public void Dispose()
         {
-            foreach (var modbus in transportDevices)
+            foreach (var modbus in TransportDevices)
             {
                 modbus?.Dispose();
             }
-            transportDevices.Clear();
+            TransportDevices.Clear();
             DisposeAccessObjects();
         }
+
     }
 }

@@ -10,6 +10,90 @@ namespace SpaceCG.Generic
     public static partial class InstanceExtension
     {
 #if NModbus4
+        public static void Sleep(this Modbus.Device.IModbusMaster master, int millisecondsTimeout)
+        {
+            if (millisecondsTimeout > 0) System.Threading.Thread.Sleep(millisecondsTimeout);
+        }
+
+        /// <summary>
+        /// 翻转单线圈
+        /// </summary>
+        /// <param name="master"></param>
+        /// <param name="slaveAddress"></param>
+        /// <param name="startAddress"></param>
+        public static async void TurnSingleCoilAsync(this Modbus.Device.IModbusMaster master, byte slaveAddress, ushort startAddress)
+        {
+            if (master?.Transport == null) return;
+
+            bool[] value = await master.ReadCoilsAsync(slaveAddress, startAddress, 1);
+            if (value?.Length != 1) return;
+
+            await master.WriteSingleCoilAsync(slaveAddress, startAddress, !value[0]);
+        }
+        /// <summary>
+        /// 翻转多线圈
+        /// </summary>
+        /// <param name="master"></param>
+        /// <param name="slaveAddress"></param>
+        /// <param name="startAddress"></param>
+        /// <param name="numberOfPoints"></param>
+        public static async void TurnMultipleCoilisAsync(this Modbus.Device.IModbusMaster master, byte slaveAddress, ushort startAddress, ushort numberOfPoints)
+        {
+            if (master?.Transport == null) return;
+
+            bool[] value = await master.ReadCoilsAsync(slaveAddress, startAddress, numberOfPoints);
+            if (value?.Length <= 0) return;
+
+            for (int i = 0; i < value.Length; i++)
+                value[i] = !value[i];
+
+            await master.WriteMultipleCoilsAsync(slaveAddress, startAddress, value);
+        }
+        /// <summary>
+        /// 翻转单线圈
+        /// </summary>
+        /// <param name="master"></param>
+        /// <param name="slaveAddress"></param>
+        /// <param name="startAddress"></param>
+        public static void TurnSingleCoil(this Modbus.Device.IModbusMaster master, byte slaveAddress, ushort startAddress)
+        {
+            if (master?.Transport == null) return;
+
+            bool[] value = master.ReadCoils(slaveAddress, startAddress, 1);
+            if (value?.Length != 1) return;
+
+            master.WriteSingleCoil(slaveAddress, startAddress, !value[0]);
+        }
+        /// <summary>
+        /// 翻转多线圈
+        /// </summary>
+        /// <param name="master"></param>
+        /// <param name="slaveAddress"></param>
+        /// <param name="startAddress"></param>
+        /// <param name="numberOfPoints"></param>
+        public static void TurnMultipleCoilis(this Modbus.Device.IModbusMaster master, byte slaveAddress, ushort startAddress, ushort numberOfPoints)
+        {
+            if (master?.Transport == null) return;
+
+            bool[] value = master.ReadCoils(slaveAddress, startAddress, numberOfPoints);
+            if (value?.Length <= 0) return;
+
+            for (int i = 0; i < value.Length; i++)
+                value[i] = !value[i];
+
+            master.WriteMultipleCoils(slaveAddress, startAddress, value);
+        }
+
+        public static void TurnSingleCoilAsync(this Modbus.Device.ModbusSerialMaster master, byte slaveAddress, ushort startAddress) => TurnSingleCoilAsync((Modbus.Device.IModbusMaster)master, slaveAddress, startAddress);
+        public static void TurnMultipleCoilisAsync(this Modbus.Device.ModbusSerialMaster master, byte slaveAddress, ushort startAddress, ushort numberOfPoints) => TurnMultipleCoilisAsync((Modbus.Device.IModbusMaster)master, slaveAddress, startAddress, numberOfPoints);
+        public static void TurnSingleCoilAsync(this Modbus.Device.ModbusIpMaster master, byte slaveAddress, ushort startAddress) => TurnSingleCoilAsync((Modbus.Device.IModbusMaster)master, slaveAddress, startAddress);
+        public static void TurnMultipleCoilisAsync(this Modbus.Device.ModbusIpMaster master, byte slaveAddress, ushort startAddress, ushort numberOfPoints) => TurnMultipleCoilisAsync((Modbus.Device.IModbusMaster)master, slaveAddress, startAddress, numberOfPoints);
+        public static void TurnSingleCoil(this Modbus.Device.ModbusSerialMaster master, byte slaveAddress, ushort startAddress) => TurnSingleCoil((Modbus.Device.IModbusMaster)master, slaveAddress, startAddress);
+        public static void TurnMultipleCoilis(this Modbus.Device.ModbusSerialMaster master, byte slaveAddress, ushort startAddress, ushort numberOfPoints) => TurnMultipleCoilis((Modbus.Device.IModbusMaster)master, slaveAddress, startAddress, numberOfPoints);
+        public static void TurnSingleCoil(this Modbus.Device.ModbusIpMaster master, byte slaveAddress, ushort startAddress) => TurnSingleCoil((Modbus.Device.IModbusMaster)master, slaveAddress, startAddress);
+        public static void TurnMultipleCoilis(this Modbus.Device.ModbusIpMaster master, byte slaveAddress, ushort startAddress, ushort numberOfPoints) => TurnMultipleCoilis((Modbus.Device.IModbusMaster)master, slaveAddress, startAddress, numberOfPoints);
+
+
         /// <summary>
         /// 创建 NModbus4 主机对象
         /// <para>配置的键值格式：Type,RemoteHostORcomm,RemotePortORbaudRate</para>

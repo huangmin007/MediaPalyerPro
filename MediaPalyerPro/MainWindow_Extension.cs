@@ -8,7 +8,7 @@ using System.Windows;
 namespace MediaPalyerPro
 {
     public partial class MainWindow : Window
-    {
+    {        
         public void SetVolume(float volume)
         {
             MiddlePlayer.SetVolume(volume);
