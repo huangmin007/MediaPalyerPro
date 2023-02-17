@@ -325,7 +325,10 @@ namespace MediaPalyerPro
             XmlNamespaceManager xmlns = new XmlNamespaceManager(settings.NameTable);
             xmlns.AddNamespace("", "http://schemas.microsoft.com/winfx/2006/xaml/presentation");
             xmlns.AddNamespace("x", "http://schemas.microsoft.com/winfx/2006/xaml");
-            XmlParserContext context = new XmlParserContext(null, xmlns, "", XmlSpace.Default);
+            xmlns.AddNamespace("d", "http://schemas.microsoft.com/expression/blend/2008");
+            xmlns.AddNamespace("mc", "http://schemas.openxmlformats.org/markup-compatibility/2006");
+            xmlns.AddNamespace("local", "clr-namespace:MediaPalyerPro");
+            XmlParserContext context = new XmlParserContext(null, xmlns, "", XmlSpace.Preserve);
             //XmlReader xmlReader = XmlReader.Create(stringReader, settings, context);
             XamlXmlReaderSettings xamlXmlReaderSettings = new XamlXmlReaderSettings();
             xamlXmlReaderSettings.LocalAssembly = System.Reflection.Assembly.GetExecutingAssembly();
@@ -370,13 +373,31 @@ namespace MediaPalyerPro
                         //Add
                         foreach (XElement btnElement in element.Elements("Button"))
                         {
-                            StringReader stringReader = new StringReader(btnElement.ToString());
+                            XElement btnElementClone = XElement.Parse(btnElement.ToString());
+#if true
+                            var imageBurshs = from sub in btnElementClone.Elements()
+                                              where sub.Name.LocalName == "Button.Background" || sub.Name.LocalName == "Button.Foreground"
+                                              select sub.Element("ImageBrush");
+
+                            foreach (XElement imageBursh in imageBurshs)
+                            {
+                                if (imageBursh == null) continue;
+                                XAttribute imageSource = imageBursh?.Attribute("ImageSource");
+                                if (imageSource != null && imageSource.Value.Substring(1, 1) != ":")
+                                    imageSource.Value = $"{Environment.CurrentDirectory }/{imageSource.Value}";
+                            }
+#endif
+                            StringReader stringReader = new StringReader(btnElementClone.ToString());
                             XmlReader xmlReader = XmlReader.Create(stringReader, settings, context);
                             XamlXmlReader xamlXmlReader = new XamlXmlReader(xmlReader, xamlXmlReaderSettings);
                             Button button = (Button)System.Windows.Markup.XamlReader.Load(xamlXmlReader);
                             button.ToolTip = String.Format($"{id}.{PanelButtons.Name}.{button.Name}");
-                            //Console.WriteLine(button.ToolTip);
                             PanelButtons.Children.Add(button);
+
+                            if(imageBurshs.Count() > 0)
+                            {
+                                Console.WriteLine(item);
+                            }
                         }
                     }
 
@@ -705,6 +726,18 @@ namespace MediaPalyerPro
             }
         }
 
-        
+        private void WPFSCPlayerPro_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            WPFSCPlayerPro player = (WPFSCPlayerPro)sender;
+
+            if (!IsVideoFile(player.Url)) return;
+
+            if (player.IsPaused)
+                player.Play();
+            else
+                player.Pause();
+
+        }
+
     }
 }

@@ -71,6 +71,8 @@ namespace MediaPalyerPro
 
             switch (extension)
             {
+                case ".MP3":    //音频格式
+                case ".WAV":    //音频格式
                 case ".MP4":
                 case ".MOV":
                 case ".M4V":

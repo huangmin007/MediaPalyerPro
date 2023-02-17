@@ -72,13 +72,14 @@
                     Stretch="Uniform" UseLayoutRounding="True" RenderOptions.BitmapScalingMode="HighQuality"
                     HorizontalAlignment="Center" VerticalAlignment="Center"
                     
+                    Mouse.MouseDown="WPFSCPlayerPro_MouseDown"
                     IsVisibleChanged="WPFSCPlayerPro_IsVisibleChanged"
                     onCaptureOpenCallbackEvent="OnCaptureOpenCallbackEvent"
                     onRenderFrameEvent="OnRenderFrameEventHandler"
                     onStreamFinishedEvent="OnStreamFinishedEventHandler"
-                    onFirstFrameRenderEvent="OnFirstFrameRenderEventHandler" 
+                    onFirstFrameRenderEvent="OnFirstFrameRenderEventHandler"
                     />
-
+                
                 <Canvas x:Name="BackgroundButtons" ToolTipService.IsEnabled="False">
                 </Canvas>
             </Grid>
@@ -90,7 +91,8 @@
                     OpenMode="Link" AutoOpen="True" OpenAndPlay="True" Loop="True" Volume="0.8"
                     Stretch="Uniform" UseLayoutRounding="True" RenderOptions.BitmapScalingMode="HighQuality"
                     HorizontalAlignment="Center" VerticalAlignment="Center"
-                    
+                                        
+                    Mouse.MouseDown="WPFSCPlayerPro_MouseDown"
                     IsVisibleChanged="WPFSCPlayerPro_IsVisibleChanged"
                     onCaptureOpenCallbackEvent="OnCaptureOpenCallbackEvent"
                     onRenderFrameEvent="OnRenderFrameEventHandler"
@@ -108,7 +110,8 @@
                     OpenMode="Link" AutoOpen="True" OpenAndPlay="True" Loop="True" Volume="0.8"  
                     Stretch="Uniform" UseLayoutRounding="True" RenderOptions.BitmapScalingMode="HighQuality"
                     HorizontalAlignment="Center" VerticalAlignment="Center"
-                    
+                                        
+                    Mouse.MouseDown="WPFSCPlayerPro_MouseDown"
                     IsVisibleChanged="WPFSCPlayerPro_IsVisibleChanged"
                     onCaptureOpenCallbackEvent="OnCaptureOpenCallbackEvent"
                     onRenderFrameEvent="OnRenderFrameEventHandler"
