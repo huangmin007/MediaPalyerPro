@@ -164,8 +164,8 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="SpaceCG\WindowsAPI\README.md" />
-    <None Include="配置说明.docx" />
-    <None Include="配置说明.pdf">
+    <None Include="操作及配置说明.docx" />
+    <None Include="操作及配置说明.pdf">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
