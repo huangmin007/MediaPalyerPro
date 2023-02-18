@@ -65,7 +65,7 @@
         
         <Grid Name="RootGroup" Focusable="False" >            
             <!-- BackgroundGroup -->
-            <Grid x:Name="BackgroundGroup"  Visibility="Visible" IsVisibleChanged="GridGroup_IsVisibleChanged">
+            <Grid x:Name="BackgroundGroup"  Visibility="Visible" IsVisibleChanged="GridGroup_IsVisibleChanged" Background="Black">
                 <sttplay:WPFSCPlayerPro Visibility="{Binding Visibility, ElementName=BackgroundGroup}"
                     x:Name="BackgroundPlayer"
                     OpenMode="Link" AutoOpen="True" OpenAndPlay="True" Loop="True" Volume="0.8"
@@ -85,7 +85,7 @@
             </Grid>
 
             <!-- MiddleGroup -->
-            <Grid x:Name="MiddleGroup" Visibility="Hidden" IsVisibleChanged="GridGroup_IsVisibleChanged">
+            <Grid x:Name="MiddleGroup" Visibility="Hidden" IsVisibleChanged="GridGroup_IsVisibleChanged" Background="Black">
                 <sttplay:WPFSCPlayerPro Visibility="{Binding Visibility, ElementName=MiddleGroup}"
                     x:Name="MiddlePlayer"
                     OpenMode="Link" AutoOpen="True" OpenAndPlay="True" Loop="True" Volume="0.8"
@@ -104,7 +104,7 @@
             </Grid>
 
             <!-- ForegroundGroup -->
-            <Grid x:Name="ForegroundGroup" Visibility="Hidden" IsVisibleChanged="GridGroup_IsVisibleChanged">
+            <Grid x:Name="ForegroundGroup" Visibility="Hidden" IsVisibleChanged="GridGroup_IsVisibleChanged" Background="Black">
                 <sttplay:WPFSCPlayerPro Visibility="{Binding Visibility, ElementName=ForegroundGroup}"
                     x:Name="ForegroundPlayer" 
                     OpenMode="Link" AutoOpen="True" OpenAndPlay="True" Loop="True" Volume="0.8"  

@@ -356,6 +356,7 @@ namespace MediaPalyerPro
                     if (uiElement?.GetType() == typeof(WPFSCPlayerPro))
                     {
                         WPFSCPlayerPro WPFPlayer = (WPFSCPlayerPro)uiElement;
+                        WPFPlayer.Source = null;
                         WPFPlayer.Close();
                     }
 

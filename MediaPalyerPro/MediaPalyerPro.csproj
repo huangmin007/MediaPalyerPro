@@ -197,13 +197,8 @@
     <Content Include="ICONS\上一页.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="ICONS\下一页 .png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
+    <Resource Include="ICONS\下一页.png" />
     <Content Include="ICONS\主页 .png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="ICONS\减少.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="ICONS\后退.png">
