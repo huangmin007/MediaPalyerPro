@@ -716,7 +716,6 @@ namespace MediaPalyerPro
                 player.Play();
             else
                 player.Pause();
-
         }
 
     }

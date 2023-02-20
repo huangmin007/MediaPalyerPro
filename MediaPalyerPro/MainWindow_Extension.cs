@@ -9,7 +9,11 @@ using System.Xml.Linq;
 namespace MediaPalyerPro
 {
     public partial class MainWindow : Window
-    {        
+    {
+        /// <summary>
+        /// 设置播放器音量
+        /// </summary>
+        /// <param name="volume"></param>
         public void SetVolume(float volume)
         {
             MiddlePlayer.SetVolume(volume);
@@ -18,7 +22,7 @@ namespace MediaPalyerPro
         }
 
         /// <summary>
-        /// 音量增加一次
+        /// 音量增加 10%
         /// </summary>
         public void VolumeUp()
         {
@@ -27,7 +31,7 @@ namespace MediaPalyerPro
             ForegroundPlayer.VolumeUp();
         }
         /// <summary>
-        /// 音量减少一次
+        /// 音量减小 10%
         /// </summary>
         public void VolumeDown()
         {
@@ -37,7 +41,7 @@ namespace MediaPalyerPro
         }
 
         /// <summary>
-        /// 临近的ID项，下一个项
+        /// 临近的 ID 项，下一个项
         /// </summary>
         public void NextItem()
         {
@@ -48,7 +52,7 @@ namespace MediaPalyerPro
             }
         }
         /// <summary>
-        /// 临近的ID项，上一个项
+        /// 临近的 ID 项，上一个项
         /// </summary>
         public void PrevItem()
         {
@@ -82,7 +86,7 @@ namespace MediaPalyerPro
                 LoadItem((XElement)(CurrentItem.Parent.LastNode));
         }
         /// <summary>
-        /// 全局播放暂停
+        /// 播放暂停
         /// </summary>
         public void PlayPause()
         {
@@ -111,7 +115,6 @@ namespace MediaPalyerPro
                 return;
             }
         }
-
 
         public void Sleep(int ms)
         {
