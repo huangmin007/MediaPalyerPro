@@ -116,6 +116,10 @@ namespace MediaPalyerPro
                         log4net.Repository.Hierarchy.Logger root = ((log4net.Repository.Hierarchy.Hierarchy)log4net.LogManager.GetRepository()).Root;
                         root.Level = (root.Level == log4net.Core.Level.Info) ? log4net.Core.Level.Debug : log4net.Core.Level.Info;
                         Log.Warn($"Root Logger Current Level: {root.Level}");
+
+                        this.Topmost = false;
+                        this.WindowState = WindowState.Normal;
+                        this.WindowStyle = WindowStyle.SingleBorderWindow;
                     }
                     break;
                 case Key.R:
@@ -140,45 +144,16 @@ namespace MediaPalyerPro
 
                 case Key.Down:
                 case Key.Right:
-                    if (CurrentItem == null) return;
-
-                    if (CurrentItem.NextNode != null)
-                        LoadItem((XElement)CurrentItem.NextNode);
-                    else
-                        LoadItem((XElement)(CurrentItem.Parent.FirstNode));
+                    NextNode();
                     break;
                 case Key.Up:
                 case Key.Left:
-                    if (CurrentItem == null) return;
-                    if (CurrentItem.PreviousNode != null)
-                        LoadItem((XElement)CurrentItem.PreviousNode);
-                    else
-                        LoadItem((XElement)(CurrentItem.Parent.LastNode));
+                    PrevNode();
                     break;
 
                 case Key.Space:
                 case Key.Enter:
-                    if (ForegroundPlayer.Visibility == Visibility.Visible)
-                    {
-                        if (ForegroundPlayer.IsPaused)
-                            ForegroundPlayer.Play();
-                        else
-                            ForegroundPlayer.Pause();
-                    }
-                    if (MiddlePlayer.Visibility == Visibility.Visible)
-                    {
-                        if (MiddlePlayer.IsPaused)
-                            MiddlePlayer.Play();
-                        else
-                            MiddlePlayer.Pause();
-                    }
-                    if (BackgroundPlayer.Visibility == Visibility.Visible)
-                    {
-                        if (BackgroundPlayer.IsPaused)
-                            BackgroundPlayer.Play();
-                        else
-                            BackgroundPlayer.Pause();
-                    }
+                    PlayPause();
                     break;
 
                 case Key.Escape:
@@ -300,6 +275,8 @@ namespace MediaPalyerPro
                                           from attribute in element.Attributes()
                                           where attribute?.Name == "ID" && attribute?.Value.Trim() == id.ToString()
                                           select element;
+
+            if (items?.Count() == 0) return;
 
             Log.Info($"Ready Load Config Item ID: {id}, Count: {items.Count()}");
             if (items.Count() != 1)
@@ -598,6 +575,8 @@ namespace MediaPalyerPro
                 Log.Error($"执行目标对象配置错误：{ex}");
             }
         }
+
+        
 
 #region Player Events Handler
         //private double LastTime = 0.0f;
