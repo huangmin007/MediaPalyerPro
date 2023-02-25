@@ -44,6 +44,8 @@ namespace MediaPalyerPro
         {
             this.Window = this;
             InitializeComponent();
+
+            //this.Title = $"Meida Player Pro";
             LoggerWindow = new LoggerWindow();
             
             InstanceExtension.ChangeInstancePropertyValue(this, "Window.");
@@ -652,8 +654,14 @@ namespace MediaPalyerPro
                     LoadItem((XElement)CurrentItem.Parent.FirstNode);
             }
         }
-
-#endregion
+        private void OnStatusChangeEvent(WPFSCPlayerPro player)
+        {
+            if (Log.IsDebugEnabled)
+                Log.Debug($"WPFSCPlayerPro({player.Name}) Status Chagned Evnet. IsPaused: {player.IsPaused}");
+            
+            CheckNetworkSyncStatus();
+        }
+        #endregion
         private void GridGroup_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
 
@@ -718,5 +726,6 @@ namespace MediaPalyerPro
                 player.Pause();
         }
 
+        
     }
 }

@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:MediaPalyerPro"
         xmlns:sttplay="clr-namespace:Sttplay.MediaPlayer"
         mc:Ignorable="d"
-        Title="Meida Player" Height="720" Width="1280" Background="#00FFFFFF" 
+        Title="Meida Player Pro" Height="720" Width="1280" Background="#00FFFFFF" 
         Loaded="Window_Loaded" MouseDown="Window_MouseDown" Name="_window" >
     <Window.Resources>
         <Style TargetType="Button">
@@ -74,10 +74,12 @@
                     
                     Mouse.MouseDown="WPFSCPlayerPro_MouseDown"
                     IsVisibleChanged="WPFSCPlayerPro_IsVisibleChanged"
+                                        
                     onCaptureOpenCallbackEvent="OnCaptureOpenCallbackEvent"
                     onRenderFrameEvent="OnRenderFrameEventHandler"
                     onStreamFinishedEvent="OnStreamFinishedEventHandler"
                     onFirstFrameRenderEvent="OnFirstFrameRenderEventHandler"
+                    onStatusChangeEvent="OnStatusChangeEvent"
                     />
                 
                 <Canvas x:Name="BackgroundButtons" ToolTipService.IsEnabled="False">
@@ -94,10 +96,12 @@
                                         
                     Mouse.MouseDown="WPFSCPlayerPro_MouseDown"
                     IsVisibleChanged="WPFSCPlayerPro_IsVisibleChanged"
+                                        
                     onCaptureOpenCallbackEvent="OnCaptureOpenCallbackEvent"
                     onRenderFrameEvent="OnRenderFrameEventHandler"
                     onStreamFinishedEvent="OnStreamFinishedEventHandler"
                     onFirstFrameRenderEvent="OnFirstFrameRenderEventHandler"
+                    onStatusChangeEvent="OnStatusChangeEvent"
                     />
 
                 <Canvas x:Name="MiddleButtons" ToolTipService.IsEnabled="False"></Canvas>
@@ -113,10 +117,12 @@
                                         
                     Mouse.MouseDown="WPFSCPlayerPro_MouseDown"
                     IsVisibleChanged="WPFSCPlayerPro_IsVisibleChanged"
+                                        
                     onCaptureOpenCallbackEvent="OnCaptureOpenCallbackEvent"
                     onRenderFrameEvent="OnRenderFrameEventHandler"
                     onStreamFinishedEvent="OnStreamFinishedEventHandler"
                     onFirstFrameRenderEvent="OnFirstFrameRenderEventHandler"
+                    onStatusChangeEvent="OnStatusChangeEvent"
                     />
 
                 <Canvas x:Name="ForegroundButtons" ToolTipService.IsEnabled="False">

@@ -159,6 +159,8 @@ namespace Sttplay.MediaPlayer
         /// </summary>
         public event Action<WPFSCPlayerPro, SCFrame> onRenderFrameEvent;
 
+        public event Action<WPFSCPlayerPro> onStatusChangeEvent;
+
         /// <summary>
         /// File type to open
         /// </summary>
@@ -278,6 +280,8 @@ namespace Sttplay.MediaPlayer
             window.Closed -= OnClose;
             CompositionTarget.Rendering -= Update;
             pool.Close(true);
+
+            onStatusChangeEvent?.Invoke(this);
         }
 
         private IntPtr GetAVFramePointer()
@@ -415,6 +419,8 @@ namespace Sttplay.MediaPlayer
             this.Url = url;
             core.Open(OpenMode, url);
             context = SynchronizationContext.Current;
+
+            onStatusChangeEvent?.Invoke(this);
         }
 
         /// <summary>
@@ -446,6 +452,8 @@ namespace Sttplay.MediaPlayer
             if (core == null) return;
             isFirst = false;
             core.Close();
+
+            onStatusChangeEvent?.Invoke(this);
         }
 
         /// <summary>
@@ -507,6 +515,8 @@ namespace Sttplay.MediaPlayer
         {
             if (core == null) return;
             core.Play();
+
+            onStatusChangeEvent?.Invoke(this);
         }
 
         /// <summary>
@@ -516,6 +526,7 @@ namespace Sttplay.MediaPlayer
         {
             if (core == null) return;
             core.Pause();
+            onStatusChangeEvent?.Invoke(this);
         }
 
 
