@@ -45,10 +45,10 @@ namespace MediaPalyerPro
             this.Window = this;
             InitializeComponent();
 
-            //this.Title = $"Meida Player Pro";
-            LoggerWindow = new LoggerWindow();
-            
             InstanceExtension.ChangeInstancePropertyValue(this, "Window.");
+            this.Title = "Meida Player Pro " + (!String.IsNullOrWhiteSpace(this.Title) ? $"({this.Title})" : "");
+
+            LoggerWindow = new LoggerWindow();
             ProcessModule = InstanceExtension.CreateProcessModule("Process.FileName");
 
 #if DEBUG
@@ -78,8 +78,8 @@ namespace MediaPalyerPro
 
             InstanceExtension.DisposeAccessObjects(AccessObjects);
 
-            InstanceExtension.DisposeNetworkClient(ref UDPClientSync);
-            InstanceExtension.DisposeNetworkServer(ref UDPServerSync);
+            InstanceExtension.DisposeNetworkClient(ref NetworkSlave);
+            InstanceExtension.DisposeNetworkServer(ref NetworkMaster);
             InstanceExtension.DisposeProcessModule(ref ProcessModule);
 
             InstanceExtension.RemoveInstanceEvents(BackgroundPlayer);
@@ -354,7 +354,7 @@ namespace MediaPalyerPro
                         foreach (XElement btnElement in element.Elements("Button"))
                         {
                             XElement btnElementClone = XElement.Parse(btnElement.ToString());
-#if true
+#if true //改为相对路径
                             var imageBurshs = from sub in btnElementClone.Elements()
                                               where sub.Name.LocalName == "Button.Background" || sub.Name.LocalName == "Button.Foreground"
                                               select sub.Element("ImageBrush");
@@ -378,6 +378,7 @@ namespace MediaPalyerPro
                             {
                                 Console.WriteLine(item);
                             }
+
                         }
                     }
 
@@ -630,8 +631,8 @@ namespace MediaPalyerPro
             if (Log.IsDebugEnabled)
                 Log.Debug($"WPFSCPlayerPro({player.Name}) First Frame Render Evnet. URL: {player.Url}");
 
-            if (UDPClientSync != null)  //4字节心跳
-                UDPClientSync.Send(SyncMessage, SyncMessage.Length - 4, 4);
+            if (NetworkSlave != null)  //4字节心跳
+                NetworkSlave.Send(SyncMessage, SyncMessage.Length - 4, 4);
 
             CallPlayerEvent(player, "OnFirstFrame");
             playerLastTimer[player.Name] = Math.Round(player.CurrentTime / 1000.0f, 2);
@@ -641,8 +642,8 @@ namespace MediaPalyerPro
             if (Log.IsDebugEnabled)
                 Log.Debug($"WPFSCPlayerPro({player.Name}) Stream Finish Event. URL: {player.Url}");
 
-            if (UDPClientSync != null)  //4字节心跳
-                UDPClientSync.Send(SyncMessage, SyncMessage.Length - 4, 4);
+            if (NetworkSlave != null)  //4字节心跳
+                NetworkSlave.Send(SyncMessage, SyncMessage.Length - 4, 4);
 
             CallPlayerEvent(player, "OnLastFrame");
 

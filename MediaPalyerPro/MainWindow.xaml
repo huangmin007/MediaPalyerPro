@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:MediaPalyerPro"
         xmlns:sttplay="clr-namespace:Sttplay.MediaPlayer"
         mc:Ignorable="d"
-        Title="Meida Player Pro" Height="720" Width="1280" Background="#00FFFFFF" 
+        Height="720" Width="1280" Background="#00FFFFFF" 
         Loaded="Window_Loaded" MouseDown="Window_MouseDown" Name="_window" >
     <Window.Resources>
         <Style TargetType="Button">
