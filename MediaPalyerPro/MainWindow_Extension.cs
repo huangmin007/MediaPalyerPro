@@ -116,6 +116,9 @@ namespace MediaPalyerPro
             }
         }
 
+        /// <summary>
+        /// 播放视频
+        /// </summary>
         public void Play()
         {
             if (ForegroundPlayer.Visibility == Visibility.Visible)
@@ -135,6 +138,9 @@ namespace MediaPalyerPro
             }
         }
 
+        /// <summary>
+        /// 暂停视频
+        /// </summary>
         public void Pause()
         {
             if (ForegroundPlayer.Visibility == Visibility.Visible)
@@ -166,5 +172,6 @@ namespace MediaPalyerPro
             else
                 Log.Info(message);
         }
+
     }
 }

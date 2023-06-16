@@ -62,8 +62,8 @@
         </Style>
     </Window.Resources>
     <Viewbox Stretch="Uniform" ClipToBounds="True" Focusable="False">
-        
-        <Grid Name="RootGroup" Focusable="False" >            
+
+        <Grid Name="RootGroup" Focusable="False" >
             <!-- BackgroundGroup -->
             <Grid x:Name="BackgroundGroup"  Visibility="Visible" IsVisibleChanged="GridGroup_IsVisibleChanged" Background="Black">
                 <sttplay:WPFSCPlayerPro Visibility="{Binding Visibility, ElementName=BackgroundGroup}"
@@ -82,7 +82,7 @@
                     onStatusChangeEvent="OnStatusChangeEvent"
                     onRenderAudioEvent="OnRenderAudioEvent"
                     />
-                
+
                 <Canvas x:Name="BackgroundButtons" ToolTipService.IsEnabled="False">
                 </Canvas>
             </Grid>

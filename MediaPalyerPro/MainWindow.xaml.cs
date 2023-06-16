@@ -18,7 +18,6 @@ using System.Text;
 using HPSocket;
 using SpaceCG.Generic;
 using SpaceCG.Log4Net.Controls;
-using log4net.Repository.Hierarchy;
 
 namespace MediaPalyerPro
 {
@@ -199,6 +198,7 @@ namespace MediaPalyerPro
             Log.Info($"Client Receive Data: {message}");
 
             TimerReset();
+
             return HandleResult.Ok;
         }
         private HandleResult OnServerReceiveEventHandler(IServer sender, IntPtr connId, byte[] data)
@@ -458,7 +458,6 @@ namespace MediaPalyerPro
             Log.Info($"CallButtonEvent: {parent}.{name}");
             if (CurrentItem.Element(parent) == null)
             {
-
                 return;
             }
 #if true
@@ -490,22 +489,22 @@ namespace MediaPalyerPro
             }
         }        
         /// <summary>
-        /// Call指定项的按扭事件
+        /// Call指定项页面的按扭事件
         /// </summary>
-        /// <param name="id"></param>
+        /// <param name="id">页面ID</param>
         /// <param name="layerName"></param>
-        /// <param name="elementName"></param>
-        public void CallButtonEvent(int id, String layerName, String elementName)
+        /// <param name="buttonName"></param>
+        public void CallButtonEvent(int id, string layerName, string buttonName)
         {
             IEnumerable<XElement> events = from item in ListItems
                                            where item.Attribute("ID")?.Value.Trim() == id.ToString()
                                            from element in item.Elements()
                                            where element.Name.LocalName == layerName
                                            from evElement in element.Elements("Events")
-                                           where evElement.Attribute("Name")?.Value?.Trim() == "Click" && evElement.Attribute("Button")?.Value?.Trim() == elementName
+                                           where evElement.Attribute("Name")?.Value?.Trim() == "Click" && evElement.Attribute("Button")?.Value?.Trim() == buttonName
                                            select evElement;
 
-            Log.Info($"CallButtonEvent: ItemID: {id}  LayerName:{layerName}  ButtonName: {elementName}  Count: {events?.Count()}");
+            Log.Info($"CallButtonEvent: ItemID: {id}  LayerName:{layerName}  ButtonName: {buttonName}  Count: {events?.Count()}");
 
             foreach (XElement element in events.Elements())
             {
@@ -519,7 +518,16 @@ namespace MediaPalyerPro
                 }
             }
         }
-
+        /// <summary>
+        /// Call当前项或页面)的按扭事件
+        /// </summary>
+        /// <param name="layerName"></param>
+        /// <param name="buttonName"></param>
+        public void CallButtonEvent(string layerName, string buttonName) 
+        {
+            if (int.TryParse(CurrentItem.Attribute("ID")?.Value, out int id)) 
+                CallButtonEvent(id, layerName, buttonName);
+        }
         /// <summary>
         /// Call Action XElement
         /// </summary>
@@ -587,7 +595,6 @@ namespace MediaPalyerPro
             }
         }
 
-        
 
 #region Player Events Handler
         //private double LastTime = 0.0f;
