@@ -10,8 +10,8 @@ namespace MediaPalyerPro
 
         private int CurrentTimerCount = 0;
 
-        public int TimerNextItemID { get; set; } = -1;
-        public int TargetTimerCount { get; set; } = 480;
+        private int TimerNextItemID = -1;
+        private int TargetTimerCount = 480;
 
         private void InitializeTimer()
         {
