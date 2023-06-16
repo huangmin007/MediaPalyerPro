@@ -520,7 +520,7 @@ namespace Sttplay.MediaPlayer
         [DllImport(AudioPlayer, CallingConvention = CallingConvention.Cdecl)]
         public static extern void CloseAudioPlayer(IntPtr player);
 
-        [DllImport(AudioPlayer, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(AudioPlayer, CallingConvention = CallingConvention.Cdecl, SetLastError =true)]
         public static extern void PausedAudioPlayer(IntPtr player, int isPaused);
 
         [DllImport(AudioPlayer, CallingConvention = CallingConvention.Cdecl)]

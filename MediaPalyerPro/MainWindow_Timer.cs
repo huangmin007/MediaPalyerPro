@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Configuration;
 using System.Timers;
 using System.Windows;
 
@@ -13,9 +8,10 @@ namespace MediaPalyerPro
     {
         private Timer Timer;
 
-        private int TargetTimerCount = 480;
         private int CurrentTimerCount = 0;
-        private int NextItemID = -1;
+
+        public int TimerNextItemID { get; set; } = -1;
+        public int TargetTimerCount { get; set; } = 480;
 
         private void InitializeTimer()
         {
@@ -32,27 +28,29 @@ namespace MediaPalyerPro
                 TargetTimerCount = count;
 #endif
             if (int.TryParse(ConfigurationManager.AppSettings["Timer.LoadItem"], out int id))
-                NextItemID = id;
+                TimerNextItemID = id;
         }
 
         private void Timer_Elapsed(object sender, ElapsedEventArgs e)
         {
-            CurrentTimerCount++;
+            CurrentTimerCount++;            
 
             if (TargetTimerCount > 0 && CurrentTimerCount >= TargetTimerCount)
             {
+                if (Log.IsDebugEnabled) Log.Debug($"TimerEvent::{CurrentTimerCount}/{TargetTimerCount}");
+
                 Timer.Stop();
                 CurrentTimerCount = 0;
 
                 if (int.TryParse(CurrentItem.Attribute("ID")?.Value, out int id))
                 {
-                    if (NextItemID == id) return;
+                    if (TimerNextItemID == id) return;
                 }
 
                 this.Dispatcher.Invoke(() =>
                 {
-                    Log.Info($"Current Timer Count: {CurrentTimerCount}  Load Item ID: {NextItemID}");
-                    LoadItem(NextItemID);
+                    Log.Info($"Current Timer Count: {CurrentTimerCount}  Load Item ID: {TimerNextItemID}  ListAutoLoop: {ListAutoLoop}");
+                    LoadItem(TimerNextItemID);
                 });
             }
         }
@@ -62,6 +60,7 @@ namespace MediaPalyerPro
         /// </summary>
         public void TimerReset()
         {
+            ListAutoLoop = false;
             CurrentTimerCount = 0;
             if(!Timer.Enabled)   Timer.Start();
         }
@@ -73,7 +72,7 @@ namespace MediaPalyerPro
         /// <param name="id"></param>
         public void LoadNextItem(int timerCount, int id)
         {
-            NextItemID = id;
+            TimerNextItemID = id;
             TargetTimerCount = timerCount;
 
             TimerReset();

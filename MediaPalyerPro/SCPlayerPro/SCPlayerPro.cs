@@ -891,12 +891,16 @@ namespace Sttplay.MediaPlayer
             ISCNative.ReleaseStreamCapture(_capture);
             _gcHandle.Free();
             _capture = IntPtr.Zero;
+
             ISCNative.ReleaseAudioPlayer(audioPlayer);
             audioPlayer = IntPtr.Zero;
+
             ISCNative.ReleaseResampler(resampler);
             resampler = IntPtr.Zero;
+
             ISCNative.ReleaseByteArray(pcm);
             pcm = IntPtr.Zero;
+
             ISCNative.ReleaseSCFrame(frameBK);
             frameBK = IntPtr.Zero;
         }

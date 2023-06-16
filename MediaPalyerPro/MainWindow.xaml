@@ -80,6 +80,7 @@
                     onStreamFinishedEvent="OnStreamFinishedEventHandler"
                     onFirstFrameRenderEvent="OnFirstFrameRenderEventHandler"
                     onStatusChangeEvent="OnStatusChangeEvent"
+                    onRenderAudioEvent="OnRenderAudioEvent"
                     />
                 
                 <Canvas x:Name="BackgroundButtons" ToolTipService.IsEnabled="False">

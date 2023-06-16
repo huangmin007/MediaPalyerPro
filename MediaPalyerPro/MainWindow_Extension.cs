@@ -116,6 +116,44 @@ namespace MediaPalyerPro
             }
         }
 
+        public void Play()
+        {
+            if (ForegroundPlayer.Visibility == Visibility.Visible)
+            {
+                if (ForegroundPlayer.IsPaused) ForegroundPlayer.Play();
+                return;
+            }
+            if (MiddlePlayer.Visibility == Visibility.Visible)
+            {
+                if (MiddlePlayer.IsPaused) MiddlePlayer.Play();
+                return;
+            }
+            if (BackgroundPlayer.Visibility == Visibility.Visible)
+            {
+                if (BackgroundPlayer.IsPaused) BackgroundPlayer.Play();
+                return;
+            }
+        }
+
+        public void Pause()
+        {
+            if (ForegroundPlayer.Visibility == Visibility.Visible)
+            {
+                ForegroundPlayer.Pause();
+                return;
+            }
+            if (MiddlePlayer.Visibility == Visibility.Visible)
+            {
+                MiddlePlayer.Pause();
+                return;
+            }
+            if (BackgroundPlayer.Visibility == Visibility.Visible)
+            {
+                BackgroundPlayer.Pause();
+                return;
+            }
+        }
+
         public void Sleep(int ms)
         {
             System.Threading.Thread.Sleep(ms);

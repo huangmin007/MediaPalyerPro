@@ -18,6 +18,7 @@ using System.Text;
 using HPSocket;
 using SpaceCG.Generic;
 using SpaceCG.Log4Net.Controls;
+using log4net.Repository.Hierarchy;
 
 namespace MediaPalyerPro
 {
@@ -33,7 +34,7 @@ namespace MediaPalyerPro
         private IEnumerable<XElement> ListItems;
 
         private XElement CurrentItem = null;
-        private Boolean ListAutoLoop = false;
+        public Boolean ListAutoLoop { get; set; } = false;
 
         private MainWindow Window;
         private Process ProcessModule;
@@ -69,6 +70,9 @@ namespace MediaPalyerPro
         protected override void OnClosing(CancelEventArgs e)
         {
             base.OnClosing(e);
+
+            BackgroundPlayer.Pause();
+            BackgroundPlayer.onRenderAudioEvent -= OnRenderAudioEvent;
 
             ForegroundPlayer.ReleaseCore();
             MiddlePlayer.ReleaseCore();
@@ -261,7 +265,7 @@ namespace MediaPalyerPro
             XAttribute autoLoop = RootElement?.Attribute("AutoLoop");
             XAttribute defaultId = RootElement?.Attribute("DefaultID");
 
-            bool.TryParse(autoLoop?.Value, out ListAutoLoop);
+            if (bool.TryParse(autoLoop?.Value, out bool listAutoLoop)) ListAutoLoop = listAutoLoop;
             if (int.TryParse(defaultId?.Value, out int id)) LoadItem(id);
         }
 
@@ -374,10 +378,10 @@ namespace MediaPalyerPro
                             button.ToolTip = String.Format($"{id}.{PanelButtons.Name}.{button.Name}");
                             PanelButtons.Children.Add(button);
 
-                            if(imageBurshs.Count() > 0)
-                            {
-                                Console.WriteLine(item);
-                            }
+                            //if(imageBurshs.Count() > 0)
+                            //{
+                                //Console.WriteLine(item);
+                            //}
 
                         }
                     }
@@ -420,16 +424,19 @@ namespace MediaPalyerPro
 
             foreach (XElement element in events.Elements())
             {
+                if (currentTime >= 0 && lastTime >= 0)
+                {
+                    if (String.IsNullOrWhiteSpace(element.Parent.Attribute("Position")?.Value)) continue;
+                    if (!double.TryParse(element.Parent.Attribute("Position").Value, out double position)) continue;
+
+                    if (!(position <= currentTime && position > lastTime)) continue;
+
+                    if (Log.IsDebugEnabled)
+                        Log.Debug($"Render Frame Evnet CurrentTimer: {currentTime}");
+                }
+
                 if (element.Name.LocalName == "Action")
                 {
-                    if (currentTime >= 0 && lastTime >= 0)
-                    {
-                        if (String.IsNullOrWhiteSpace(element.Parent.Attribute("Position")?.Value)) continue;
-                        if (!double.TryParse(element.Parent.Attribute("Position").Value, out double position)) continue;
-
-                        if (!(position <= currentTime && position > lastTime)) continue;
-                    }
-
                     CallActionElement(element);
                 }
                 else
@@ -559,6 +566,7 @@ namespace MediaPalyerPro
                 //Property
                 else if (!String.IsNullOrWhiteSpace(action.Attribute("Property")?.Value) && !String.IsNullOrWhiteSpace(action.Attribute("Value")?.Value))
                 {
+
                     Task.Run(() =>
                     {
                         this.Dispatcher.Invoke(() =>
@@ -610,6 +618,7 @@ namespace MediaPalyerPro
                                                   where ev.Attribute("Name")?.Value == "OnRenderFrame"
                                                   select ev;
                     if (playerRenderEvents[player.Name].Count() == 0) playerRenderEvents[player.Name] = null;
+                    //Console.WriteLine("COUNT>>>>>>>>");
                 }
             }
         }
@@ -640,7 +649,7 @@ namespace MediaPalyerPro
         private void OnStreamFinishedEventHandler(WPFSCPlayerPro player)
         {
             if (Log.IsDebugEnabled)
-                Log.Debug($"WPFSCPlayerPro({player.Name}) Stream Finish Event. URL: {player.Url}");
+                Log.Debug($"WPFSCPlayerPro({player.Name}) Stream Finish Event. URL: {player.Url}  ListAutoLoop: {ListAutoLoop}");
 
             if (NetworkSlave != null)  //4字节心跳
                 NetworkSlave.Send(SyncMessage, SyncMessage.Length - 4, 4);
@@ -699,6 +708,7 @@ namespace MediaPalyerPro
         }
         private void Window_MouseDown(object sender, MouseButtonEventArgs e)
         {
+            if (Log.IsDebugEnabled) Log.Debug($"Window Mouse Down.");
             TimerReset();
         }
 
@@ -727,6 +737,20 @@ namespace MediaPalyerPro
                 player.Pause();
         }
 
-        
+        private void OnRenderAudioEvent(WPFSCPlayerPro player, IntPtr arg2, int arg3)
+        {
+            this.Dispatcher.Invoke(() =>
+            {
+                if (playerRenderEvents[player.Name] != null)
+                {
+                    double currentTime = Math.Round(player.CurrentTime / 1000.0f, 2);
+                    if (playerLastTimer[player.Name] == currentTime) return;
+
+                    CallPlayerEvent(player, "OnRenderFrame", currentTime, playerLastTimer[player.Name]);
+                    playerLastTimer[player.Name] = currentTime;
+                }
+            });
+            
+        }
     }
 }

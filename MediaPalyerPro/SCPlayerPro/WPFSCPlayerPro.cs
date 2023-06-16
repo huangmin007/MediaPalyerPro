@@ -159,7 +159,9 @@ namespace Sttplay.MediaPlayer
         /// </summary>
         public event Action<WPFSCPlayerPro, SCFrame> onRenderFrameEvent;
 
+        public event Action<WPFSCPlayerPro, IntPtr, int> onRenderAudioEvent;
         public event Action<WPFSCPlayerPro> onStatusChangeEvent;
+
 
         /// <summary>
         /// File type to open
@@ -241,17 +243,23 @@ namespace Sttplay.MediaPlayer
             core.onCaptureOpenCallbackEvent += OnCaptureOpenCallback;
             core.onInterruptCallbackEvent += OnInterruptCallback;
             core.onDrawVideoFrameEvent += OnDrawVideoFrame;
+            core.onDrawAudioFrameEvent += OnDrawAudioFrame;
 
             if (AutoOpen)
                 Open(OpenMode);
 
             pool = new MiniThreadPool(5);
-            
+
+        }
+
+        private void OnDrawAudioFrame(IntPtr arg1, int arg2)
+        {
+            onRenderAudioEvent?.Invoke(this, arg1, arg2);
         }
 
         private void OnInterruptCallback(string error)
         {
-           if(onInterruptCallbackEvent != null)
+            if (onInterruptCallbackEvent != null)
             {
                 try
                 {
@@ -560,13 +568,15 @@ namespace Sttplay.MediaPlayer
         {
             Close();
             if (core == null) return;
-            if (renderer != null)
-                renderer.Release();
-            core.Release();
+            if (renderer != null)  renderer.Release();
+
+            core.onDrawAudioFrameEvent -= OnDrawAudioFrame;
             core.onStreamFinishedEvent -= OnStreamFinished;
             core.onCaptureOpenCallbackEvent -= OnCaptureOpenCallback;
             core.onInterruptCallbackEvent -= OnInterruptCallback;
             core.onDrawVideoFrameEvent -= OnDrawVideoFrame;
+
+            core.Release();
             core = null;
         }
     }
