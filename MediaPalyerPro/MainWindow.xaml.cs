@@ -254,6 +254,8 @@ namespace MediaPalyerPro
 
                 //RootElement = XElement.Load(fileName);
                 RootElement = XElement.Load(reader, LoadOptions.None);
+                ReplaceTemplateElements(RootElement.Elements("Template"), RootElement.Elements("Item"), true);
+
                 ListItems = RootElement.Elements("Item");
             }
             catch (Exception ex)
