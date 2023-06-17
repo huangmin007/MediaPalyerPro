@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Windows.Media;
 using log4net.Core;
 using SpaceCG.WindowsAPI.User32;
+using System.Windows.Input;
 
 namespace SpaceCG.Log4Net.Controls
 {
@@ -13,8 +14,14 @@ namespace SpaceCG.Log4Net.Controls
     /// 独立的日志窗体对象
     /// <para>使用 Ctrl+L 显示激活窗体/隐藏窗体 </para>
     /// </summary>
+    /// <summary>
+    /// 独立的日志窗体对象
+    /// <para>使用 Ctrl+L 显示激活窗体/隐藏窗体 </para>
+    /// </summary>
     public partial class LoggerWindow : Window
     {
+        protected static readonly log4net.ILog Log = log4net.LogManager.GetLogger(nameof(LoggerWindow));
+
         private IntPtr Handle;
         private HwndSource HwndSource;
 
@@ -23,12 +30,17 @@ namespace SpaceCG.Log4Net.Controls
         /// <summary> ListView </summary>
         protected ListView ListView;
         /// <summary> ListBoxAppender </summary>
-        protected ListBoxAppender ListBoxAppender;
+        private ListBoxAppender ListBoxAppender;
 
         /// <summary>
         /// 最大显示行数
         /// </summary>
         protected int MaxLines = 512;
+
+        /// <summary>
+        /// 关闭窗体时并销毁窗体
+        /// </summary>
+        private bool CloseDispose = false;
 
         /// <summary>
         /// Logger Window
@@ -40,12 +52,39 @@ namespace SpaceCG.Log4Net.Controls
             this.MaxLines = maxLines;
             OnInitializeControls();
         }
+
+        /// <summary>
+        /// 强制关闭窗体，并销毁
+        /// </summary>
+        /// <param name="force"></param>
+        public void Close(bool force)
+        {
+            CloseDispose = force;
+            base.Close();
+        }
+
+        /// <inheritdoc/>
+        protected override void OnPreviewKeyUp(KeyEventArgs e)
+        {
+            base.OnPreviewKeyUp(e);
+
+            switch (e.Key)
+            {
+                case Key.T:
+                    if (e.KeyboardDevice.Modifiers == ModifierKeys.Control)
+                    {
+                        this.Topmost = !this.Topmost;
+                    }
+                    break;
+            }
+        }
         /// <inheritdoc/>
         protected override void OnClosing(CancelEventArgs e)
         {
-            this.Hide();
+            if (!CloseDispose) this.Hide();
+
+            e.Cancel = !CloseDispose;
             base.OnClosing(e);
-            if (HwndSource != null)  e.Cancel = true;
         }
         /// <inheritdoc/>
         protected override void OnClosed(EventArgs e)
@@ -59,8 +98,7 @@ namespace SpaceCG.Log4Net.Controls
             if (Handle != null)
             {
                 bool result = User32.UnregisterHotKey(Handle, 0);
-                result = result || User32.UnregisterHotKey(Handle, 1);
-                //Console.WriteLine("Logger Window UnregisterHotKey State:{0}", result);
+                //result = result || User32.UnregisterHotKey(Handle, 1);
 
                 Handle = IntPtr.Zero;
             }
@@ -109,7 +147,7 @@ namespace SpaceCG.Log4Net.Controls
             Grid.SetRow(splitter, 1);
             Grid.SetRow(TextBox, 2);
 
-            this.Title = "Local Logger Window (Ctrl+L 隐藏/唤起)";
+            this.Title = "日志信息";
             this.Width = 1280;
             this.Height = 720;
             this.Content = grid;
@@ -153,8 +191,8 @@ namespace SpaceCG.Log4Net.Controls
         private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             ListViewItem item = (ListViewItem)this.ListView.SelectedItem;
-            
-            if(item != null)
+
+            if (item != null)
             {
                 this.TextBox.Text = item.ToolTip.ToString();
 
@@ -177,9 +215,10 @@ namespace SpaceCG.Log4Net.Controls
         {
             Handle = new WindowInteropHelper(this).Handle;
 
-            bool result = User32.RegisterHotKey(Handle, 0, RhkModifier.CONTROL, VirtualKeyCode.VK_L);
-            result = result || User32.RegisterHotKey(Handle, 1, RhkModifier.CONTROL, VirtualKeyCode.VK_M);
-            //Console.WriteLine("Logger Window RegisterHotKey State:{0}", result);
+            bool result = User32.RegisterHotKey(Handle, 0, RhkModifier.CONTROL | RhkModifier.SHIFT, VirtualKeyCode.VK_W);
+            Log.Info($"注册系统全局热键 CTRL+SHIFT+W 日志窗体显示/隐藏 ... {(result ? "OK" : "Failed")}");
+            //result = result || User32.RegisterHotKey(Handle, 1, RhkModifier.CONTROL | RhkModifier.SHIFT, VirtualKeyCode.VK_D);
+            //Log.Info($"注册系统全局热键 CTRL+SHIFT+D 日志级别切换 ... {(result ? "OK" : "Failed")}");
 
             if (result)
             {
@@ -187,10 +226,27 @@ namespace SpaceCG.Log4Net.Controls
                 HwndSource.AddHook(WindowProcHandler);
             }
 
-            this.InsertAfter(SwpInsertAfter.HWND_TOPMOST);
-            //User32.SetWindowPos(Handle, new IntPtr(-1), 0, 0, 0, 0, SwpFlags.NOMOVE | SwpFlags.NOSIZE);
-
+            this.Topmost = true;
             this.Hide();
+        }
+
+        /// <summary>
+        /// 更改日志级别
+        /// </summary>
+        public static void ChangeLoggerLevel()
+        {
+            log4net.Repository.Hierarchy.Logger root = ((log4net.Repository.Hierarchy.Hierarchy)log4net.LogManager.GetRepository()).Root;
+            root.Level = (root.Level == log4net.Core.Level.Info) ? log4net.Core.Level.Debug : log4net.Core.Level.Info;
+            Log.Warn($"Root Logger Current Level: {root.Level}");
+#if false
+            if (((log4net.Repository.Hierarchy.Hierarchy)log4net.LogManager.GetRepository()).Root.Level == log4net.Core.Level.Info)
+                ((log4net.Repository.Hierarchy.Hierarchy)log4net.LogManager.GetRepository()).Root.Level = log4net.Core.Level.Debug;
+            else
+                ((log4net.Repository.Hierarchy.Hierarchy)log4net.LogManager.GetRepository()).Root.Level = log4net.Core.Level.Info;
+
+            log4net.Core.Level level = ((log4net.Repository.Hierarchy.Hierarchy)log4net.LogManager.GetRepository()).Root.Level;
+            Log.Info($"Current Logger Level: {level}");
+#endif
         }
 
         /// <summary>
@@ -205,14 +261,14 @@ namespace SpaceCG.Log4Net.Controls
         protected IntPtr WindowProcHandler(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
             MessageType msgType = (MessageType)msg;
-            if(msgType == MessageType.WM_HOTKEY)
+            if (msgType == MessageType.WM_HOTKEY)
             {
                 RhkModifier rhk = (RhkModifier)(lParam.ToInt32() & 0xFFFF);     //低双字节
                 VirtualKeyCode key = (VirtualKeyCode)(lParam.ToInt32() >> 16);  //高双字节 key
 
-                if(rhk == RhkModifier.CONTROL)
+                if (rhk == (RhkModifier.CONTROL | RhkModifier.SHIFT))
                 {
-                    if (key == VirtualKeyCode.VK_L)
+                    if (key == VirtualKeyCode.VK_W)
                     {
                         if (this.WindowState == WindowState.Minimized || this.Visibility == Visibility.Hidden)
                         {
@@ -226,9 +282,9 @@ namespace SpaceCG.Log4Net.Controls
                             this.Hide();
                         }
                     }
-                    if(key == VirtualKeyCode.VK_M)
+                    else if (key == VirtualKeyCode.VK_D)
                     {
-                        // ...
+                        ChangeLoggerLevel();
                     }
 
                     handled = true;
@@ -238,4 +294,5 @@ namespace SpaceCG.Log4Net.Controls
             return IntPtr.Zero;
         }
     }
+
 }

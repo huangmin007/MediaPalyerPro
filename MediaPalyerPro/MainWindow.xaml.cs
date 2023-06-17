@@ -70,12 +70,9 @@ namespace MediaPalyerPro
         {
             base.OnClosing(e);
 
+            ForegroundPlayer.Pause();
+            MiddlePlayer.Pause();
             BackgroundPlayer.Pause();
-            BackgroundPlayer.onRenderAudioEvent -= OnRenderAudioEvent;
-
-            ForegroundPlayer.ReleaseCore();
-            MiddlePlayer.ReleaseCore();
-            BackgroundPlayer.ReleaseCore();
 
             InstanceExtension.DisposeAccessObjects(AccessObjects);
 
@@ -88,9 +85,13 @@ namespace MediaPalyerPro
             InstanceExtension.RemoveInstanceEvents(ForegroundPlayer);
 
             Application.Current.Shutdown(0);
-            LoggerWindow.Close();
+            LoggerWindow.Close(true);
+
+            ForegroundPlayer.ReleaseCore();
+            MiddlePlayer.ReleaseCore();
+            BackgroundPlayer.ReleaseCore();
         }
-        
+
         /// <inheritdoc/>
         protected override void OnKeyDown(KeyEventArgs e)
         {
