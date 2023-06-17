@@ -77,8 +77,6 @@ namespace MediaPalyerPro
             MiddlePlayer.ReleaseCore();
             BackgroundPlayer.ReleaseCore();
 
-            LoggerWindow.Close();
-
             InstanceExtension.DisposeAccessObjects(AccessObjects);
 
             InstanceExtension.DisposeNetworkClient(ref NetworkSlave);
@@ -88,6 +86,9 @@ namespace MediaPalyerPro
             InstanceExtension.RemoveInstanceEvents(BackgroundPlayer);
             InstanceExtension.RemoveInstanceEvents(MiddlePlayer);
             InstanceExtension.RemoveInstanceEvents(ForegroundPlayer);
+
+            Application.Current.Shutdown(0);
+            LoggerWindow.Close();
         }
         
         /// <inheritdoc/>
