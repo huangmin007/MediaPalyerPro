@@ -226,5 +226,63 @@ namespace MediaPalyerPro
             }
         }
 
+        /// <summary>
+        /// 分析 XML 文档，处理模板与引用模板元素
+        /// </summary>
+        /// <param name="rootElement"> XML 元素或根元素</param>
+        /// <param name="templateXName">模板的元素的名称</param>
+        /// <param name="refTemplateXName">引用模板的元素名称</param>
+        /// <param name="removeRefElements">是否移除引用模板元素，如果保留，则会重命名元素名称</param>
+        public static void ReplaceTemplateElements(XElement rootElement, XName templateXName, XName refTemplateXName, bool removeRefElements = true)
+        {
+            if (rootElement == null || templateXName == null || refTemplateXName == null) return;
+
+            //获取有效的模板元素集合
+            var templates = from template in rootElement.Elements(templateXName)
+                            let templateName = template.Attribute("Name")?.Value
+                            where !String.IsNullOrWhiteSpace(templateName)
+                            where !(from refTemplate in template.Descendants(refTemplateXName)
+                                    where refTemplate.Attribute("Name")?.Value == templateName
+                                    select true).Any()
+                            select template;
+            if (templates?.Count() <= 0) return;
+            //Console.WriteLine($"Template Count: {templates.Count()}");
+
+            //获取引用模板元素集合
+            var refTemplates = rootElement.Descendants(refTemplateXName);
+            if (refTemplates?.Count() <= 0) return;
+            //Console.WriteLine($"Ref Template Count: {templates.Count()}");
+
+            //Analyse Replace
+            for (int i = 0; i < refTemplates?.Count(); i++)
+            {
+                var refTemplate = refTemplates.ElementAt(i);
+                var refTemplateName = refTemplate.Attribute("Name")?.Value;
+                if (String.IsNullOrWhiteSpace(refTemplateName)) continue;
+
+                //在模板集合中查找指定名称的模板
+                var temps = from template in templates
+                            where refTemplateName == template.Attribute("Name")?.Value
+                            select template;
+                if (temps?.Count() <= 0) continue;
+
+                //拷贝模板并更新属性值
+                string templateString = temps.First().ToString();
+                IEnumerable<XAttribute> attributes = refTemplate.Attributes();
+                foreach (var attribute in attributes)
+                {
+                    if (attribute.Name != "Name")
+                        templateString = templateString.Replace($"{{{attribute.Name}}}", attribute.Value);
+                }
+
+                refTemplate.AddAfterSelf(XElement.Parse(templateString).Elements());
+                if (removeRefElements)
+                    refTemplate.Remove();
+                else
+                    refTemplate.Name = $"{refTemplate.Name.LocalName}.Handle";
+                i--;
+            }
+        }
+
     }
 }
