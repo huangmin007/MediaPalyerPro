@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace SpaceCG.Generic
 {
-    public static partial class InstanceExtension
+    public static partial class InstanceExtensions
     {
         #region 扩展的配置动态调用函数
         public static void SendBytes(this SerialPort serialPort, byte[] buffer)

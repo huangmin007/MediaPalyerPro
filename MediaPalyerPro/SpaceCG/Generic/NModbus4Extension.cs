@@ -7,7 +7,7 @@ using System.Net.Sockets;
 
 namespace SpaceCG.Generic
 {
-    public static partial class InstanceExtension
+    public static partial class InstanceExtensions
     {
 #if NModbus4
         public static void Sleep(this Modbus.Device.IModbusMaster master, int millisecondsTimeout)

@@ -161,7 +161,7 @@ namespace SpaceCG.Module
 
         public void Dispose()
         {
-            InstanceExtension.DisposeNModbus4Master(ref master);
+            InstanceExtensions.DisposeNModbus4Master(ref master);
             StopListener();
         }
 
@@ -614,17 +614,17 @@ namespace SpaceCG.Module
         /// </summary>
         public ModbusDeviceManager(String accessKey = null)
         {
-            Modbus.Device.IModbusMaster ModbusLMS = InstanceExtension.CreateNModbus4Master("Modbus.Master.LCMS");
-            Modbus.Device.IModbusMaster ModbusDIO = InstanceExtension.CreateNModbus4Master("Modbus.Master.DIO");
+            Modbus.Device.IModbusMaster ModbusLMS = InstanceExtensions.CreateNModbus4Master("Modbus.Master.LCMS");
+            Modbus.Device.IModbusMaster ModbusDIO = InstanceExtensions.CreateNModbus4Master("Modbus.Master.DIO");
             if (ModbusLMS != null) AccessObjects.TryAdd("Modbus.Master.LCMS", ModbusLMS);
             if (ModbusDIO != null) AccessObjects.TryAdd("Modbus.Master.DIO", ModbusDIO);
 
-            HPSocket.IServer NetworkServer = InstanceExtension.CreateNetworkServer("Network.Server.Interface", OnServerReceiveEventHandler);
-            HPSocket.IClient NetworkClient = InstanceExtension.CreateNetworkClient("Network.Client.Interface", OnClientReceiveEventHandler);
+            HPSocket.IServer NetworkServer = InstanceExtensions.CreateNetworkServer("Network.Server.Interface", OnServerReceiveEventHandler);
+            HPSocket.IClient NetworkClient = InstanceExtensions.CreateNetworkClient("Network.Client.Interface", OnClientReceiveEventHandler);
             if (NetworkServer != null) AccessObjects.TryAdd("Network.Server.Interface", NetworkServer);
             if (NetworkClient != null) AccessObjects.TryAdd("Network.Client.Interface", NetworkClient);
 
-            SerialPort SerialPort = InstanceExtension.CreateSerialPort("Serial.PortName", null);
+            SerialPort SerialPort = InstanceExtensions.CreateSerialPort("Serial.PortName", null);
             if (SerialPort != null) AccessObjects.TryAdd("Serial.PortName", SerialPort);
 
             if (!String.IsNullOrWhiteSpace(accessKey)) AccessObjects.TryAdd(accessKey, this);
@@ -700,7 +700,7 @@ namespace SpaceCG.Module
         /// </summary>
         public void DisposeAccessObjects()
         {
-            InstanceExtension.DisposeAccessObjects(AccessObjects);
+            InstanceExtensions.DisposeAccessObjects(AccessObjects);
             AccessObjects?.Clear();
             AccessObjects = null;
         }
@@ -855,9 +855,9 @@ namespace SpaceCG.Module
                         if (String.IsNullOrWhiteSpace(methodName)) continue;
 
                         if (!String.IsNullOrWhiteSpace(action.Attribute("Params")?.Value))
-                            InstanceExtension.CallInstanceMethod(targetObj, methodName, StringExtension.ConvertParameters(action.Attribute("Params").Value));
+                            InstanceExtensions.CallInstanceMethod(targetObj, methodName, StringExtension.ConvertParameters(action.Attribute("Params").Value));
                         else
-                            InstanceExtension.CallInstanceMethod(targetObj, methodName);
+                            InstanceExtensions.CallInstanceMethod(targetObj, methodName);
                     }
                 }
             });
@@ -909,9 +909,9 @@ namespace SpaceCG.Module
                         if (String.IsNullOrWhiteSpace(methodName)) continue;
 
                         if (!String.IsNullOrWhiteSpace(action.Attribute("Params")?.Value))
-                            InstanceExtension.CallInstanceMethod(targetObj, methodName, StringExtension.ConvertParameters(action.Attribute("Params").Value));
+                            InstanceExtensions.CallInstanceMethod(targetObj, methodName, StringExtension.ConvertParameters(action.Attribute("Params").Value));
                         else
-                            InstanceExtension.CallInstanceMethod(targetObj, methodName);
+                            InstanceExtensions.CallInstanceMethod(targetObj, methodName);
                     }
                 }
             });

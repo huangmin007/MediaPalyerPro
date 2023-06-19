@@ -15,7 +15,7 @@ namespace SpaceCG.Generic
     /// <summary>
     /// 实例功能扩展库
     /// </summary>
-    public static partial class InstanceExtension
+    public static partial class InstanceExtensions
     {
         /// <summary>
         /// log4net.Logger 对象
@@ -295,7 +295,7 @@ namespace SpaceCG.Generic
             if (instanceObj == null || String.IsNullOrWhiteSpace(methodName))
                 throw new ArgumentNullException("参数不能为空");
 
-            IEnumerable<MethodInfo> methods = from type in typeof(InstanceExtension).Assembly.GetTypes()
+            IEnumerable<MethodInfo> methods = from type in typeof(InstanceExtensions).Assembly.GetTypes()
                                               where type.IsSealed && !type.IsGenericType && !type.IsNested
                                               from method in type.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
                                               where method.Name == methodName && method.IsDefined(typeof(ExtensionAttribute), false) && method.GetParameters()[0].ParameterType == instanceObj.GetType()
@@ -498,17 +498,17 @@ namespace SpaceCG.Generic
                 if (type == typeof(System.IO.Ports.SerialPort))
                 {
                     System.IO.Ports.SerialPort serialPort = (System.IO.Ports.SerialPort)kv.Value;
-                    InstanceExtension.DisposeSerialPort(ref serialPort);
+                    InstanceExtensions.DisposeSerialPort(ref serialPort);
                 }
                 else if (type == typeof(Process))
                 {
                     Process process = (Process)kv.Value;
-                    InstanceExtension.DisposeProcessModule(ref process);
+                    InstanceExtensions.DisposeProcessModule(ref process);
                 }
                 else if (typeof(Modbus.Device.IModbusMaster).IsAssignableFrom(type))
                 {
                     Modbus.Device.IModbusMaster master = (Modbus.Device.IModbusMaster)kv.Value;
-                    InstanceExtension.DisposeNModbus4Master(ref master);
+                    InstanceExtensions.DisposeNModbus4Master(ref master);
                 }
 #if NModbus
                 else if (typeof(NModbus.IModbusMaster).IsAssignableFrom(type))
@@ -520,12 +520,12 @@ namespace SpaceCG.Generic
                 else if (typeof(HPSocket.IServer).IsAssignableFrom(type))
                 {
                     HPSocket.IServer server = (HPSocket.IServer)kv.Value;
-                    InstanceExtension.DisposeNetworkServer(ref server);
+                    InstanceExtensions.DisposeNetworkServer(ref server);
                 }
                 else if (typeof(HPSocket.IClient).IsAssignableFrom(type))
                 {
                     HPSocket.IClient client = (HPSocket.IClient)kv.Value;
-                    InstanceExtension.DisposeNetworkClient(ref client);
+                    InstanceExtensions.DisposeNetworkClient(ref client);
                 }
                 else
                 {

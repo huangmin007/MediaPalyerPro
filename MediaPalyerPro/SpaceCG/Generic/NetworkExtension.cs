@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace SpaceCG.Generic
 {
-    public static partial class InstanceExtension
+    public static partial class InstanceExtensions
     {
         /// <summary>
         /// 获取本机的 IPv4 地址

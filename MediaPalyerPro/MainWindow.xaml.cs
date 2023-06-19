@@ -18,6 +18,7 @@ using System.Text;
 using HPSocket;
 using SpaceCG.Generic;
 using SpaceCG.Log4Net.Controls;
+using System.Windows.Media;
 
 namespace MediaPalyerPro
 {
@@ -29,27 +30,38 @@ namespace MediaPalyerPro
         public static readonly log4net.ILog Log = log4net.LogManager.GetLogger(nameof(MainWindow));
         private readonly string MEDIA_CONFIG_FILE = "MediaContents.Config";
 
-        private XElement RootElement = null;
+        private const string PLAYER_NAME = "Player";
+        private const string BUTTONS_NAME = "Buttons";
+        private const string CONTAINER_NAME = "Container";
+
+        private XElement RootConfiguration = null;
         private IEnumerable<XElement> ListItems;
 
         private XElement CurrentItem = null;
         public Boolean ListAutoLoop { get; set; } = false;
 
-        private MainWindow Window;
         private Process ProcessModule;
         private LoggerWindow LoggerWindow;
         private ConcurrentDictionary<String, IDisposable> AccessObjects = new ConcurrentDictionary<string, IDisposable>();
 
+        private MainWindow Window;
+        private Grid MiddleGroup;
+        private Grid ForegroundGroup;
+        private Grid BackgroundGroup;
+
+        /// <summary>
+        /// 当前播放器
+        /// </summary>
+        private WPFSCPlayerPro CurrentPlayer;
+
         public MainWindow()
         {
-            this.Window = this;
             InitializeComponent();
-
-            InstanceExtension.ChangeInstancePropertyValue(this, "Window.");
+            InstanceExtensions.ChangeInstancePropertyValue(this, "Window.");
             this.Title = "Meida Player Pro " + (!String.IsNullOrWhiteSpace(this.Title) ? $"({this.Title})" : "");
 
             LoggerWindow = new LoggerWindow();
-            ProcessModule = InstanceExtension.CreateProcessModule("Process.FileName");
+            ProcessModule = InstanceExtensions.CreateProcessModule("Process.FileName");
 
 #if DEBUG
             //System.Diagnostics.PresentationTraceSources.DataBindingSource.Switch.Level = System.Diagnostics.SourceLevels.Critical;
@@ -60,8 +72,26 @@ namespace MediaPalyerPro
             ((log4net.Repository.Hierarchy.Hierarchy)log4net.LogManager.GetRepository()).Root.Level = log4net.Core.Level.Debug;
 #endif
 
-            RootGroup.Width = this.Width;
-            RootGroup.Height = this.Height;
+            this.RootContainer.Width = this.Width;
+            this.RootContainer.Height = this.Height;
+            foreach(FrameworkElement child in LogicalTreeHelper.GetChildren(RootContainer))
+            {
+                child.Width = this.Width;
+                child.Height = this.Height;
+                Console.WriteLine($"FrameworkElement: {child.Name}({child})");
+                foreach (FrameworkElement subChild in LogicalTreeHelper.GetChildren(child))
+                {
+                    subChild.Width = this.Width;
+                    subChild.Height = this.Height;
+                    Console.WriteLine($"\tFrameworkElement: {subChild.Name}({subChild})");
+                }
+            }
+
+            //考虑兼容的属性
+            this.Window = this;
+            this.MiddleGroup = MiddleContainer;
+            this.BackgroundGroup = BackgroundContainer;
+            this.ForegroundGroup = ForegroundContainer;
         }
 
         #region Override Functions
@@ -74,22 +104,22 @@ namespace MediaPalyerPro
             MiddlePlayer.Pause();
             BackgroundPlayer.Pause();
 
-            InstanceExtension.DisposeAccessObjects(AccessObjects);
+            InstanceExtensions.DisposeAccessObjects(AccessObjects);
 
-            InstanceExtension.DisposeNetworkClient(ref NetworkSlave);
-            InstanceExtension.DisposeNetworkServer(ref NetworkMaster);
-            InstanceExtension.DisposeProcessModule(ref ProcessModule);
+            InstanceExtensions.DisposeNetworkClient(ref NetworkSlave);
+            InstanceExtensions.DisposeNetworkServer(ref NetworkMaster);
+            InstanceExtensions.DisposeProcessModule(ref ProcessModule);
 
-            InstanceExtension.RemoveInstanceEvents(BackgroundPlayer);
-            InstanceExtension.RemoveInstanceEvents(MiddlePlayer);
-            InstanceExtension.RemoveInstanceEvents(ForegroundPlayer);
+            InstanceExtensions.RemoveInstanceEvents(BackgroundPlayer);
+            InstanceExtensions.RemoveInstanceEvents(MiddlePlayer);
+            InstanceExtensions.RemoveInstanceEvents(ForegroundPlayer);
 
-            Application.Current.Shutdown(0);
+            //Application.Current.Shutdown(0);
             LoggerWindow.Close(true);
 
-            ForegroundPlayer.ReleaseCore();
-            MiddlePlayer.ReleaseCore();
-            BackgroundPlayer.ReleaseCore();
+            //ForegroundPlayer.ReleaseCore();
+            //MiddlePlayer.ReleaseCore();
+            //BackgroundPlayer.ReleaseCore();
         }
 
         /// <inheritdoc/>
@@ -176,14 +206,14 @@ namespace MediaPalyerPro
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             //Create Instance
-            Modbus.Device.IModbusMaster ModbusDIO = InstanceExtension.CreateNModbus4Master("Modbus.Master");
+            Modbus.Device.IModbusMaster ModbusDIO = InstanceExtensions.CreateNModbus4Master("Modbus.Master");
             if (ModbusDIO != null) AccessObjects.TryAdd("Modbus.Master", ModbusDIO);
-            System.IO.Ports.SerialPort SerialPort = InstanceExtension.CreateSerialPort("SerialPort.PortName", null);
+            System.IO.Ports.SerialPort SerialPort = InstanceExtensions.CreateSerialPort("SerialPort.PortName", null);
             if (SerialPort != null) AccessObjects.TryAdd("SerialPort", SerialPort);
 
             //Create Instance
-            HPSocket.IServer NetworkServer = InstanceExtension.CreateNetworkServer("Network.Server", OnServerReceiveEventHandler);
-            HPSocket.IClient NetworkClient = InstanceExtension.CreateNetworkClient("Network.Client", OnClientReceiveEventHandler);
+            HPSocket.IServer NetworkServer = InstanceExtensions.CreateNetworkServer("Network.Server", OnServerReceiveEventHandler);
+            HPSocket.IClient NetworkClient = InstanceExtensions.CreateNetworkClient("Network.Client", OnClientReceiveEventHandler);
             if (NetworkServer != null) AccessObjects.TryAdd("Network.Server", NetworkServer);
             if (NetworkClient != null) AccessObjects.TryAdd("Network.Client", NetworkClient);
 
@@ -228,7 +258,7 @@ namespace MediaPalyerPro
                     if (element.Name.LocalName == "Action")
                         this.CallActionElement(element);
                     else
-                        InstanceExtension.ChangeInstancePropertyValue(this, element);
+                        InstanceExtensions.ChangeInstancePropertyValue(this, element);
                 });
             }
             catch (Exception ex)
@@ -254,20 +284,23 @@ namespace MediaPalyerPro
                 settings.IgnoreWhitespace = true;
                 XmlReader reader = XmlReader.Create(fileName, settings);
 
-                //RootElement = XElement.Load(fileName);
-                RootElement = XElement.Load(reader, LoadOptions.None);
-                ReplaceTemplateElements(RootElement.Elements("Template"), RootElement.Elements("Item"), true);
-
-                ListItems = RootElement.Elements("Item");
+                RootConfiguration = XElement.Load(reader, LoadOptions.None);
+                ReplaceTemplateElements(RootConfiguration, "Template", "RefTemplate", true);
             }
             catch (Exception ex)
             {
-                Log.Error($"读取 {fileName} 文件错误：{ex}");
+                Log.Error($"读取 {fileName}错误, 文件格式错误：{ex}");
+                if(MessageBox.Show($"退出程序？\r\n{ex.ToString()}", "配置文件格式错误", MessageBoxButton.OKCancel, MessageBoxImage.Error, MessageBoxResult.OK) == MessageBoxResult.OK)
+                {
+                    this.Close();
+                    Application.Current.Shutdown(0);
+                }
                 return;
             }
 
-            XAttribute autoLoop = RootElement?.Attribute("AutoLoop");
-            XAttribute defaultId = RootElement?.Attribute("DefaultID");
+            ListItems = RootConfiguration.Elements("Item");
+            XAttribute autoLoop = RootConfiguration?.Attribute("AutoLoop");
+            XAttribute defaultId = RootConfiguration?.Attribute("DefaultID");
 
             if (bool.TryParse(autoLoop?.Value, out bool listAutoLoop)) ListAutoLoop = listAutoLoop;
             if (int.TryParse(defaultId?.Value, out int id)) LoadItem(id);
@@ -286,16 +319,14 @@ namespace MediaPalyerPro
                                           where attribute?.Name == "ID" && attribute?.Value.Trim() == id.ToString()
                                           select element;
 
-            if (items?.Count() == 0) return;
-
-            Log.Info($"Ready Load Config Item ID: {id}, Count: {items.Count()}");
-            if (items.Count() != 1)
+            if (items?.Count() != 1)
             {
-                Log.Warn($"配置项列表中不存在指定的 ID 项, 或存在多个相同的 ID: {id} ");
+                Log.Warn($"配置项列表中不存在指定的 ID: {id} 项");
                 return;
             }
 
-            LoadItem(items.ElementAt(0));
+            Log.Info($"Ready Load Item ID: {id}");
+            LoadItem(items.First());
         }
         /// <summary>
         /// 播放列表项,,https://www.codenong.com/54797577/
@@ -338,7 +369,7 @@ namespace MediaPalyerPro
                         continue;
                     }
 
-                    FrameworkElement uiElement = (FrameworkElement)InstanceExtension.GetInstanceFieldObject(this, element.Name.LocalName);
+                    FrameworkElement uiElement = (FrameworkElement)InstanceExtensions.GetInstanceFieldObject(this, element.Name.LocalName);
                     //WPFSCPlayerPro.Close()
                     if (uiElement?.GetType() == typeof(WPFSCPlayerPro))
                     {
@@ -348,7 +379,7 @@ namespace MediaPalyerPro
                     }
 
                     //FrameworkElement Property
-                    InstanceExtension.ChangeInstancePropertyValue(this, element);
+                    InstanceExtensions.ChangeInstancePropertyValue(this, element);
 
                     //CanvasButtons
                     //if (uiElement?.GetType() == typeof(Canvas) && element.Elements("Button")?.Count() > 0)
@@ -445,7 +476,7 @@ namespace MediaPalyerPro
                 }
                 else
                 {
-                    InstanceExtension.ChangeInstancePropertyValue(this, element);
+                    InstanceExtensions.ChangeInstancePropertyValue(this, element);
                 }
             }
         }
@@ -488,7 +519,7 @@ namespace MediaPalyerPro
                 }
                 else
                 {
-                    InstanceExtension.ChangeInstancePropertyValue(this, element);
+                    InstanceExtensions.ChangeInstancePropertyValue(this, element);
                 }
             }
         }        
@@ -518,7 +549,7 @@ namespace MediaPalyerPro
                 }
                 else
                 {
-                    InstanceExtension.ChangeInstancePropertyValue(this, element);
+                    InstanceExtensions.ChangeInstancePropertyValue(this, element);
                 }
             }
         }
@@ -542,7 +573,7 @@ namespace MediaPalyerPro
 
             Object target = null;
             if (action.Attribute("TargetObj") != null)
-                target = InstanceExtension.GetInstanceFieldObject(this, action?.Attribute("TargetObj")?.Value);
+                target = InstanceExtensions.GetInstanceFieldObject(this, action?.Attribute("TargetObj")?.Value);
             else if (action.Attribute("TargetKey") != null)
                 target = AccessObjects.TryGetValue(action?.Attribute("TargetKey")?.Value, out IDisposable obj) ? obj : null;
             if (target == null)
@@ -560,7 +591,7 @@ namespace MediaPalyerPro
                 {
                     if(action.Attribute("Method").Value == "Sleep")
                     {
-                        InstanceExtension.CallInstanceMethod(target, action.Attribute("Method").Value, StringExtension.ConvertParameters(action.Attribute("Params").Value));
+                        InstanceExtensions.CallInstanceMethod(target, action.Attribute("Method").Value, StringExtension.ConvertParameters(action.Attribute("Params").Value));
                         return;
                     }
 
@@ -569,9 +600,9 @@ namespace MediaPalyerPro
                         this.Dispatcher.Invoke(() =>
                         {
                             if (!String.IsNullOrWhiteSpace(action.Attribute("Params")?.Value))
-                                InstanceExtension.CallInstanceMethod(target, action.Attribute("Method").Value, StringExtension.ConvertParameters(action.Attribute("Params").Value));
+                                InstanceExtensions.CallInstanceMethod(target, action.Attribute("Method").Value, StringExtension.ConvertParameters(action.Attribute("Params").Value));
                             else
-                                InstanceExtension.CallInstanceMethod(target, action.Attribute("Method").Value);
+                                InstanceExtensions.CallInstanceMethod(target, action.Attribute("Method").Value);
                         });
                     });
                 }
@@ -583,7 +614,7 @@ namespace MediaPalyerPro
                     {
                         this.Dispatcher.Invoke(() =>
                         {
-                            InstanceExtension.ChangeInstancePropertyValue(target, action.Attribute("Property").Value, action.Attribute("Value").Value);
+                            InstanceExtensions.ChangeInstancePropertyValue(target, action.Attribute("Property").Value, action.Attribute("Value").Value);
                         });
                     });
                 }
@@ -600,7 +631,7 @@ namespace MediaPalyerPro
         }
 
 
-#region Player Events Handler
+        #region Player Events Handler
         //private double LastTime = 0.0f;
         //private IEnumerable<XElement> onRenderEvents;
 
@@ -683,24 +714,39 @@ namespace MediaPalyerPro
             CheckNetworkSyncStatus();
         }
         #endregion
-        private void GridGroup_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
-        {
-
-        }
-        private void WPFSCPlayerPro_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        private void UIElement_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
             if (!this.IsLoaded) return;
 
-            WPFSCPlayerPro player = (WPFSCPlayerPro)sender;
-            Log.Info($"WPFSCPlayerPro({player.Name})  IsVisibleChanged:{player.Visibility}  NewValue:{e.NewValue}");
-            
-            FrameworkElement parent = (FrameworkElement)player.Parent;
-            if (player.Visibility != Visibility.Visible || parent.Visibility != Visibility.Visible)
-            {
-                player.Pause();
-            }
-        }
+            Type type = sender.GetType();
+            WPFSCPlayerPro player = null;
 
+            if (type == typeof(WPFSCPlayerPro))
+            {
+                player = (WPFSCPlayerPro)sender;
+            }
+            else if(type == typeof(Grid))
+            {
+                Grid grid = (Grid)sender;
+                string name = grid.Name.Replace(CONTAINER_NAME, PLAYER_NAME);
+                player = this.FindName(name) as WPFSCPlayerPro;
+            }
+
+            if (player != null)
+            {
+                FrameworkElement parent = (FrameworkElement)player.Parent;
+                Log.Info($"WPFSCPlayerPro({player.Name})  IsVisibleChanged:{player.Visibility}  NewValue:{e.NewValue}");
+                if (player.Visibility != Visibility.Visible || parent.Visibility != Visibility.Visible)
+                {
+                    player.Pause();
+                }
+            }
+
+            CurrentPlayer = ForegroundPlayer.Visibility == Visibility.Visible ? ForegroundPlayer :
+                            MiddlePlayer.Visibility == Visibility.Visible ? MiddlePlayer :
+                            BackgroundPlayer.Visibility == Visibility.Visible ? BackgroundPlayer : null;
+        }
+        
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             Button button = (Button)sender;

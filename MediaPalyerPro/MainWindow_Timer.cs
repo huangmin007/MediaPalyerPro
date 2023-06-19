@@ -33,6 +33,7 @@ namespace MediaPalyerPro
 
         private void Timer_Elapsed(object sender, ElapsedEventArgs e)
         {
+            if (RootConfiguration == null || CurrentItem == null) return;
             CurrentTimerCount++;            
 
             if (TargetTimerCount > 0 && CurrentTimerCount >= TargetTimerCount)

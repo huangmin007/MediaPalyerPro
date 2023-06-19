@@ -46,7 +46,7 @@ namespace MediaPalyerPro
         {
             if(!String.IsNullOrWhiteSpace(ConfigurationManager.AppSettings["Synchronize.Player"]))
             {
-                object player = InstanceExtension.GetInstanceFieldObject(this, ConfigurationManager.AppSettings["Synchronize.Player"]);
+                object player = InstanceExtensions.GetInstanceFieldObject(this, ConfigurationManager.AppSettings["Synchronize.Player"]);
                 if(player.GetType() == typeof(WPFSCPlayerPro))
                 {
                     SyncPlayer = (WPFSCPlayerPro)player;
@@ -56,9 +56,9 @@ namespace MediaPalyerPro
             if (SyncPlayer == null) return;
 
             //多端同步
-            NetworkSlave = InstanceExtension.CreateNetworkClient("Synchronize.Slave", OnUdpSyncClientReceiveEventHandler);
+            NetworkSlave = InstanceExtensions.CreateNetworkClient("Synchronize.Slave", OnUdpSyncClientReceiveEventHandler);
             if (NetworkSlave == null)
-                NetworkMaster = InstanceExtension.CreateNetworkServer("Synchronize.Master", OnUdpSyncServerReceiveEventHandler);
+                NetworkMaster = InstanceExtensions.CreateNetworkServer("Synchronize.Master", OnUdpSyncServerReceiveEventHandler);
 
             if (NetworkMaster != null && ushort.TryParse(ConfigurationManager.AppSettings["Synchronize.Calibr"], out ushort calibr)) SyncCalibr = calibr;
             if (NetworkMaster != null && ushort.TryParse(ConfigurationManager.AppSettings["Synchronize.WaitCount"], out ushort waitCount)) SyncWaitCount = waitCount;

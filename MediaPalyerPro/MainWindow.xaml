@@ -60,20 +60,26 @@
                 </Setter.Value>
             </Setter>
         </Style>
-    </Window.Resources>
-    <Viewbox Stretch="Uniform" ClipToBounds="True" Focusable="False">
 
-        <Grid Name="RootGroup" Focusable="False" >
+        <Style TargetType="sttplay:WPFSCPlayerPro">
+            <Setter Property="Stretch" Value="Uniform"/>
+            <Setter Property="UseLayoutRounding" Value="True"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality"/>
+            <EventSetter Event="Mouse.MouseDown" Handler="WPFSCPlayerPro_MouseDown"/>
+        </Style>
+        
+    </Window.Resources>
+    <Viewbox Name="ViewboxContainer" Stretch="Uniform" ClipToBounds="True" Focusable="False">
+
+        <Grid Name="RootContainer" Focusable="False" Width="1280" Height="720" >
             <!-- BackgroundGroup -->
-            <Grid x:Name="BackgroundGroup"  Visibility="Visible" IsVisibleChanged="GridGroup_IsVisibleChanged" Background="Black">
-                <sttplay:WPFSCPlayerPro Visibility="{Binding Visibility, ElementName=BackgroundGroup}"
-                    x:Name="BackgroundPlayer"
+            <Grid x:Name="BackgroundContainer" Visibility="Visible" Background="Black" IsVisibleChanged="UIElement_IsVisibleChanged">
+                <sttplay:WPFSCPlayerPro x:Name="BackgroundPlayer"
                     OpenMode="Link" AutoOpen="True" OpenAndPlay="True" Loop="True" Volume="0.8"
-                    Stretch="Uniform" UseLayoutRounding="True" RenderOptions.BitmapScalingMode="HighQuality"
-                    HorizontalAlignment="Center" VerticalAlignment="Center"
                     
-                    Mouse.MouseDown="WPFSCPlayerPro_MouseDown"
-                    IsVisibleChanged="WPFSCPlayerPro_IsVisibleChanged"
+                    IsVisibleChanged="UIElement_IsVisibleChanged"
                                         
                     onCaptureOpenCallbackEvent="OnCaptureOpenCallbackEvent"
                     onRenderFrameEvent="OnRenderFrameEventHandler"
@@ -83,20 +89,15 @@
                     onRenderAudioEvent="OnRenderAudioEvent"
                     />
 
-                <Canvas x:Name="BackgroundButtons" ToolTipService.IsEnabled="False">
-                </Canvas>
+                <Canvas x:Name="BackgroundButtons" ToolTipService.IsEnabled="False"></Canvas>
             </Grid>
 
             <!-- MiddleGroup -->
-            <Grid x:Name="MiddleGroup" Visibility="Hidden" IsVisibleChanged="GridGroup_IsVisibleChanged" Background="Black">
-                <sttplay:WPFSCPlayerPro Visibility="{Binding Visibility, ElementName=MiddleGroup}"
-                    x:Name="MiddlePlayer"
+            <Grid x:Name="MiddleContainer" Visibility="Hidden" Background="Black" IsVisibleChanged="UIElement_IsVisibleChanged">
+                <sttplay:WPFSCPlayerPro x:Name="MiddlePlayer"
                     OpenMode="Link" AutoOpen="True" OpenAndPlay="True" Loop="True" Volume="0.8"
-                    Stretch="Uniform" UseLayoutRounding="True" RenderOptions.BitmapScalingMode="HighQuality"
-                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                         
-                    Mouse.MouseDown="WPFSCPlayerPro_MouseDown"
-                    IsVisibleChanged="WPFSCPlayerPro_IsVisibleChanged"
+                    IsVisibleChanged="UIElement_IsVisibleChanged"
                                         
                     onCaptureOpenCallbackEvent="OnCaptureOpenCallbackEvent"
                     onRenderFrameEvent="OnRenderFrameEventHandler"
@@ -109,15 +110,11 @@
             </Grid>
 
             <!-- ForegroundGroup -->
-            <Grid x:Name="ForegroundGroup" Visibility="Hidden" IsVisibleChanged="GridGroup_IsVisibleChanged" Background="Black">
-                <sttplay:WPFSCPlayerPro Visibility="{Binding Visibility, ElementName=ForegroundGroup}"
-                    x:Name="ForegroundPlayer" 
+            <Grid x:Name="ForegroundContainer" Visibility="Hidden" Background="Black" IsVisibleChanged="UIElement_IsVisibleChanged">
+                <sttplay:WPFSCPlayerPro x:Name="ForegroundPlayer" 
                     OpenMode="Link" AutoOpen="True" OpenAndPlay="True" Loop="True" Volume="0.8"  
-                    Stretch="Uniform" UseLayoutRounding="True" RenderOptions.BitmapScalingMode="HighQuality"
-                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                         
-                    Mouse.MouseDown="WPFSCPlayerPro_MouseDown"
-                    IsVisibleChanged="WPFSCPlayerPro_IsVisibleChanged"
+                    IsVisibleChanged="UIElement_IsVisibleChanged"
                                         
                     onCaptureOpenCallbackEvent="OnCaptureOpenCallbackEvent"
                     onRenderFrameEvent="OnRenderFrameEventHandler"
@@ -139,7 +136,10 @@
                     -->
                 </Canvas>
             </Grid>
-
+            
+            
         </Grid>
+        
+        
     </Viewbox>
 </Window>

@@ -27,8 +27,8 @@ namespace MediaPalyerPro
 
             MiddlePlayer.Pause();
             BackgroundPlayer.Pause();
-            MiddleGroup.Visibility = Visibility.Hidden;
-            BackgroundGroup.Visibility = Visibility.Hidden;
+            MiddleContainer.Visibility = Visibility.Hidden;
+            BackgroundContainer.Visibility = Visibility.Hidden;
 
             try
             {
@@ -36,7 +36,7 @@ namespace MediaPalyerPro
 
                 if (IsVideoFile(fileName))
                 {
-                    ForegroundGroup.Visibility = Visibility.Visible;
+                    ForegroundContainer.Visibility = Visibility.Visible;
                     ForegroundPlayer.Visibility = Visibility.Visible;
 
                     ForegroundPlayer.Open(MediaType.Link, fileName);
@@ -44,7 +44,7 @@ namespace MediaPalyerPro
                 else if (IsImageFile(fileName))
                 {
                     ForegroundPlayer.Close();
-                    ForegroundGroup.Visibility = Visibility.Visible;
+                    ForegroundContainer.Visibility = Visibility.Visible;
                     ForegroundPlayer.Visibility = Visibility.Visible;
 
                     ForegroundPlayer.Source = new BitmapImage(new Uri(fileName, UriKind.RelativeOrAbsolute));

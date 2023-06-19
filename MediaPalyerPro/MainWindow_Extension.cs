@@ -90,30 +90,9 @@ namespace MediaPalyerPro
         /// </summary>
         public void PlayPause()
         {
-            if (ForegroundPlayer.Visibility == Visibility.Visible)
-            {
-                if (ForegroundPlayer.IsPaused)
-                    ForegroundPlayer.Play();
-                else
-                    ForegroundPlayer.Pause();
-                return;
-            }
-            if (MiddlePlayer.Visibility == Visibility.Visible)
-            {
-                if (MiddlePlayer.IsPaused)
-                    MiddlePlayer.Play();
-                else
-                    MiddlePlayer.Pause();
-                return;
-            }
-            if (BackgroundPlayer.Visibility == Visibility.Visible)
-            {
-                if (BackgroundPlayer.IsPaused)
-                    BackgroundPlayer.Play();
-                else
-                    BackgroundPlayer.Pause();
-                return;
-            }
+            if (CurrentPlayer == null) return;
+            if (CurrentPlayer.IsPaused) CurrentPlayer.Play();
+            else CurrentPlayer.Pause();
         }
 
         /// <summary>
@@ -121,21 +100,8 @@ namespace MediaPalyerPro
         /// </summary>
         public void Play()
         {
-            if (ForegroundPlayer.Visibility == Visibility.Visible)
-            {
-                if (ForegroundPlayer.IsPaused) ForegroundPlayer.Play();
-                return;
-            }
-            if (MiddlePlayer.Visibility == Visibility.Visible)
-            {
-                if (MiddlePlayer.IsPaused) MiddlePlayer.Play();
-                return;
-            }
-            if (BackgroundPlayer.Visibility == Visibility.Visible)
-            {
-                if (BackgroundPlayer.IsPaused) BackgroundPlayer.Play();
-                return;
-            }
+            if (CurrentPlayer == null) return;
+            if (CurrentPlayer.IsPaused) CurrentPlayer.Play();
         }
 
         /// <summary>
@@ -143,21 +109,8 @@ namespace MediaPalyerPro
         /// </summary>
         public void Pause()
         {
-            if (ForegroundPlayer.Visibility == Visibility.Visible)
-            {
-                ForegroundPlayer.Pause();
-                return;
-            }
-            if (MiddlePlayer.Visibility == Visibility.Visible)
-            {
-                MiddlePlayer.Pause();
-                return;
-            }
-            if (BackgroundPlayer.Visibility == Visibility.Visible)
-            {
-                BackgroundPlayer.Pause();
-                return;
-            }
+            if (CurrentPlayer == null) return;
+            CurrentPlayer.Pause();
         }
 
         public void Sleep(int ms)

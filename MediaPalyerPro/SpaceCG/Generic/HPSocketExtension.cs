@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace SpaceCG.Generic
 {
 #if HPSocket
-    public static partial class InstanceExtension
+    public static partial class InstanceExtensions
     {
         #region 扩展的配置动态调用函数
         /// <summary>
