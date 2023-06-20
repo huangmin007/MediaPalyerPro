@@ -211,6 +211,8 @@ namespace MediaPalyerPro
             System.IO.Ports.SerialPort SerialPort = InstanceExtensions.CreateSerialPort("SerialPort.PortName", null);
             if (SerialPort != null) AccessObjects.TryAdd("SerialPort", SerialPort);
 
+            ModbusDIO.WriteMultipleCoilsAsync(4, 0, new bool[] { true, true, true });
+
             //Create Instance
             HPSocket.IServer NetworkServer = InstanceExtensions.CreateNetworkServer("Network.Server", OnServerReceiveEventHandler);
             HPSocket.IClient NetworkClient = InstanceExtensions.CreateNetworkClient("Network.Client", OnClientReceiveEventHandler);
@@ -594,7 +596,6 @@ namespace MediaPalyerPro
                         InstanceExtensions.CallInstanceMethod(target, action.Attribute("Method").Value, StringExtension.ConvertParameters(action.Attribute("Params").Value));
                         return;
                     }
-
                     Task.Run(() =>
                     {
                         this.Dispatcher.Invoke(() =>
