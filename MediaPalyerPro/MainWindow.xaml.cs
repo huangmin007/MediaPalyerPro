@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -14,8 +13,6 @@ using System.Xml;
 using System.Xaml;
 using SpaceCG.Generic;
 using SpaceCG.Extensions;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
 
 namespace MediaPalyerPro
 {
@@ -39,7 +36,7 @@ namespace MediaPalyerPro
         private IEnumerable<XElement> ItemElements;
 
         private XElement CurrentItem = null;
-        private int CurrentItemID => CurrentItem != null && int.TryParse(CurrentItem.Attribute("ID")?.Value, out int id) ? id : int.MinValue;
+        private int CurrentItemID = int.MinValue;
 
         public Boolean ListAutoLoop { get; set; } = false;
 
@@ -58,16 +55,13 @@ namespace MediaPalyerPro
         {
             InitializeComponent();
             SetInstancePropertyValues(this, "Window.");
+            this.Title = "Meida Player Pro v1.0.20230620";
             this.Title = "Meida Player Pro " + (!String.IsNullOrWhiteSpace(this.Title) ? $"({this.Title})" : "");
 
             LoggerWindow = new LoggerWindow();
             ProcessModule = CreateProcessModule("Process.FileName");
 
 #if DEBUG
-            System.Diagnostics.PresentationTraceSources.DataBindingSource.Switch.Level = System.Diagnostics.SourceLevels.Critical;
-            int tier = RenderCapability.Tier >> 16;
-            Console.WriteLine("Tier:{0}", tier);
-
             this.Topmost = false;
 #endif
 
@@ -117,7 +111,8 @@ namespace MediaPalyerPro
                 XmlReader reader = XmlReader.Create(fileName, settings);
 
                 RootConfiguration = XElement.Load(reader, LoadOptions.None);
-                ReplaceTemplateElements(RootConfiguration, "Template", "RefTemplate", true);
+                ReplaceImageBrushSource(RootConfiguration);
+                XElementExtensions.ReplaceTemplateElements(RootConfiguration, "Template", "RefTemplate", true);
             }
             catch (Exception ex)
             {
@@ -131,25 +126,20 @@ namespace MediaPalyerPro
             }
 
             ItemElements = RootConfiguration.Elements("Item");
-            XAttribute autoLoop = RootConfiguration?.Attribute("AutoLoop");
-            XAttribute defaultId = RootConfiguration?.Attribute("DefaultID");
-
-            if (bool.TryParse(autoLoop?.Value, out bool listAutoLoop)) ListAutoLoop = listAutoLoop;
-            if (int.TryParse(defaultId?.Value, out int id)) LoadItem(id);
+            if (bool.TryParse(RootConfiguration.Attribute("AutoLoop")?.Value, out bool listAutoLoop)) ListAutoLoop = listAutoLoop;
+            if (int.TryParse(RootConfiguration.Attribute("DefaultID")?.Value, out int id)) LoadItem(id);
         }
 
         /// <summary>
-        /// 加载指定 ID 项内容
+        /// 加载指定项的内容
         /// </summary>
-        /// <param name="id">指定 ID</param>
+        /// <param name="id">指定 ID 属性值</param>
         public void LoadItem(int id)
         {
             if (ItemElements?.Count() <= 0) return;
-
             IEnumerable<XElement> items = from item in ItemElements
                                           where item.Attribute("ID")?.Value.Trim() == id.ToString()
                                           select item;
-
             if (items?.Count() != 1)
             {
                 Log.Warn($"配置项列表中不存在指定的 ID: {id} 项");
@@ -157,6 +147,25 @@ namespace MediaPalyerPro
             }
 
             Log.Info($"Ready Load Item ID: {id}");
+            LoadItem(items.First());
+        }
+        /// <summary>
+        /// 加载指定项的内容
+        /// </summary>
+        /// <param name="name">指定 Name 属性值</param>
+        public void LoadItem(string name)
+        {
+            if (ItemElements?.Count() <= 0) return;
+            IEnumerable<XElement> items = from item in ItemElements
+                                          where item.Attribute("Name")?.Value.Trim() == name
+                                          select item;
+            if (items?.Count() != 1)
+            {
+                Log.Warn($"配置项列表中不存在指定的 Name: {name} 项");
+                return;
+            }
+
+            Log.Info($"Ready Load Item Name: {name}");
             LoadItem(items.First());
         }
         /// <summary>
@@ -169,8 +178,8 @@ namespace MediaPalyerPro
             if (item == null || !item.HasElements) return;
 
             CurrentItem = item;
+            CurrentItemID = int.TryParse(CurrentItem.Attribute("ID")?.Value, out int value) ? value : int.MinValue;
 
-            //StringReader stringReader = new StringReader("");
             XmlReaderSettings settings = new XmlReaderSettings { NameTable = new NameTable() };
             XmlNamespaceManager xmlns = new XmlNamespaceManager(settings.NameTable);
             xmlns.AddNamespace("", "http://schemas.microsoft.com/winfx/2006/xaml/presentation");
@@ -179,17 +188,12 @@ namespace MediaPalyerPro
             xmlns.AddNamespace("mc", "http://schemas.openxmlformats.org/markup-compatibility/2006");
             xmlns.AddNamespace("local", "clr-namespace:MediaPalyerPro");
             XmlParserContext context = new XmlParserContext(null, xmlns, "", XmlSpace.Preserve);
-            //XmlReader xmlReader = XmlReader.Create(stringReader, settings, context);
             XamlXmlReaderSettings xamlXmlReaderSettings = new XamlXmlReaderSettings();
             xamlXmlReaderSettings.LocalAssembly = System.Reflection.Assembly.GetExecutingAssembly();
-            //XamlXmlReader xamlXmlReader = new XamlXmlReader(xmlReader, xamlXmlReaderSettings);
-            //UIElement element = (UIElement)System.Windows.Markup.XamlReader.Load(xamlXmlReader);
-
+            
             CenterPlayer.Pause();
             ForegroundPlayer.Pause();
             BackgroundPlayer.Pause();
-
-            String id = CurrentItem.Attribute("ID")?.Value;
 
             try
             {
@@ -202,10 +206,10 @@ namespace MediaPalyerPro
                     }
 
                     if (!InstanceExtensions.GetInstanceFieldValue(this, element.Name.LocalName, out object objectField)) continue;
-
                     FrameworkElement uiElement = objectField as FrameworkElement;
                     if (uiElement == null) continue;
 
+                    //WPFSCPlayerPro.Close()
                     if (uiElement.GetType() == typeof(WPFSCPlayerPro))
                     {
                         WPFSCPlayerPro WPFPlayer = (WPFSCPlayerPro)uiElement;
@@ -213,54 +217,45 @@ namespace MediaPalyerPro
                         WPFPlayer.Close();
                     }
 
-                    uiElement.ToolTip = element;
-
                     //FrameworkElement Property
                     InstanceExtensions.SetInstancePropertyValues(this, element);
 
-                    //CanvasButtons
-                    //if (uiElement?.GetType() == typeof(Canvas) && element.Elements("Button")?.Count() > 0)
+                    //ToolTip
+                    uiElement.ToolTip = element;
+
+                    //Buttons
                     if (uiElement.Name.IndexOf(BUTTONS) != 0 && element.Elements("Button")?.Count() > 0)
                     {
                         Panel PanelButtons = (Panel)uiElement;
                         //Clear
                         PanelButtons.Children.Clear();
-                        PanelButtons.ToolTip = id;
+                        PanelButtons.ToolTip = CurrentItemID.ToString();
                         //Add
                         foreach (XElement btnElement in element.Elements("Button"))
                         {
-                            XElement btnElementClone = XElement.Parse(btnElement.ToString());
-#if true //改为相对路径
-                            var imageBurshs = from sub in btnElementClone.Elements()
-                                              where sub.Name.LocalName == "Button.Background" || sub.Name.LocalName == "Button.Foreground"
-                                              select sub.Element("ImageBrush");
-
-                            foreach (XElement imageBursh in imageBurshs)
+                            using (StringReader stringReader = new StringReader(btnElement.ToString()))
                             {
-                                if (imageBursh == null) continue;
-                                XAttribute imageSource = imageBursh?.Attribute("ImageSource");
-                                if (imageSource != null && imageSource.Value.Substring(1, 1) != ":")
-                                    imageSource.Value = $"{Environment.CurrentDirectory }/{imageSource.Value}";
+                                using (XmlReader xmlReader = XmlReader.Create(stringReader, settings, context))
+                                {
+                                    using (XamlXmlReader xamlXmlReader = new XamlXmlReader(xmlReader, xamlXmlReaderSettings))
+                                    {
+                                        Button button = (Button)System.Windows.Markup.XamlReader.Load(xamlXmlReader);
+                                        button.ToolTip = String.Format($"{CurrentItemID}.{PanelButtons.Name}.{button.Name}");
+                                        PanelButtons.Children.Add(button);
+                                    }
+                                }
                             }
-#endif
-                            StringReader stringReader = new StringReader(btnElementClone.ToString());
-                            XmlReader xmlReader = XmlReader.Create(stringReader, settings, context);
-                            XamlXmlReader xamlXmlReader = new XamlXmlReader(xmlReader, xamlXmlReaderSettings);
-                            Button button = (Button)System.Windows.Markup.XamlReader.Load(xamlXmlReader);
-                            button.ToolTip = String.Format($"{id}.{PanelButtons.Name}.{button.Name}");
-                            PanelButtons.Children.Add(button);
-
                         }
                     }
 
                     //Sub Element Actions
                     foreach (XElement action in element?.Elements("Action"))
                     {
-                        ///this.CallActionElement(action);
+                        ControlInterface.TryParseControlMessage(action, out object returnResult);
                     }
 
                     //WPFSCPlayerPro.Open()
-                    if (uiElement?.GetType() == typeof(WPFSCPlayerPro))
+                    if (uiElement.GetType() == typeof(WPFSCPlayerPro))
                     {
                         WPFSCPlayerPro WPFPlayer = (WPFSCPlayerPro)uiElement;
                         if(WPFPlayer.AutoOpen) WPFPlayer.Open(MediaType.Link, null);
@@ -270,6 +265,7 @@ namespace MediaPalyerPro
             catch(Exception ex)
             {
                 Log.Error($"加载配置项错误：{ex}");
+                MessageBox.Show("解析配置错误", "Error", MessageBoxButton.OK);
             }
 
             GC.Collect();
