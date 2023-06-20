@@ -9,16 +9,13 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Input;
 using Sttplay.MediaPlayer;
-using System.Threading.Tasks;
-using System.Collections.Concurrent;
 using System.Windows.Controls;
 using System.Xml;
 using System.Xaml;
-using System.Text;
-using HPSocket;
 using SpaceCG.Generic;
-using SpaceCG.Log4Net.Controls;
+using SpaceCG.Extensions;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace MediaPalyerPro
 {
@@ -27,49 +24,51 @@ namespace MediaPalyerPro
     /// </summary>
     public partial class MainWindow : Window
     {
-        public static readonly log4net.ILog Log = log4net.LogManager.GetLogger(nameof(MainWindow));
+        public static readonly LoggerTrace Log = new LoggerTrace(nameof(MainWindow));
         private readonly string MEDIA_CONFIG_FILE = "MediaContents.Config";
 
-        private const string PLAYER_NAME = "Player";
-        private const string BUTTONS_NAME = "Buttons";
-        private const string CONTAINER_NAME = "Container";
+        internal const string FOREGROUND = "Foreground";
+        internal const string BACKGROUND = "Background";
+        internal const string CENTER = "Center";
+        internal const string PLAYER = "Player";
+        internal const string BUTTON = "Button";
+        internal const string BUTTONS = "Buttons";
+        internal const string CONTAINER = "Container";
 
         private XElement RootConfiguration = null;
-        private IEnumerable<XElement> ListItems;
+        private IEnumerable<XElement> ItemElements;
 
         private XElement CurrentItem = null;
+        private int CurrentItemID => CurrentItem != null && int.TryParse(CurrentItem.Attribute("ID")?.Value, out int id) ? id : int.MinValue;
+
         public Boolean ListAutoLoop { get; set; } = false;
 
         private Process ProcessModule;
-        private LoggerWindow LoggerWindow;
-        private ConcurrentDictionary<String, IDisposable> AccessObjects = new ConcurrentDictionary<string, IDisposable>();
-
         private MainWindow Window;
-        private Grid MiddleGroup;
-        private Grid ForegroundGroup;
-        private Grid BackgroundGroup;
+        private LoggerWindow LoggerWindow;
 
         /// <summary>
         /// 当前播放器
         /// </summary>
         private WPFSCPlayerPro CurrentPlayer;
 
+        private ControlInterface ControlInterface;
+
         public MainWindow()
         {
             InitializeComponent();
-            InstanceExtensions.ChangeInstancePropertyValue(this, "Window.");
+            SetInstancePropertyValues(this, "Window.");
             this.Title = "Meida Player Pro " + (!String.IsNullOrWhiteSpace(this.Title) ? $"({this.Title})" : "");
 
             LoggerWindow = new LoggerWindow();
-            ProcessModule = InstanceExtensions.CreateProcessModule("Process.FileName");
+            ProcessModule = CreateProcessModule("Process.FileName");
 
 #if DEBUG
-            //System.Diagnostics.PresentationTraceSources.DataBindingSource.Switch.Level = System.Diagnostics.SourceLevels.Critical;
-            //int tier = RenderCapability.Tier >> 16;
-            //Console.WriteLine("Tier:{0}", tier);
+            System.Diagnostics.PresentationTraceSources.DataBindingSource.Switch.Level = System.Diagnostics.SourceLevels.Critical;
+            int tier = RenderCapability.Tier >> 16;
+            Console.WriteLine("Tier:{0}", tier);
 
             this.Topmost = false;
-            ((log4net.Repository.Hierarchy.Hierarchy)log4net.LogManager.GetRepository()).Root.Level = log4net.Core.Level.Debug;
 #endif
 
             this.RootContainer.Width = this.Width;
@@ -87,136 +86,13 @@ namespace MediaPalyerPro
                 }
             }
 
-            //考虑兼容的属性
             this.Window = this;
-            this.MiddleGroup = MiddleContainer;
-            this.BackgroundGroup = BackgroundContainer;
-            this.ForegroundGroup = ForegroundContainer;
+            ControlInterface = new ControlInterface(2023);
+            ControlInterface.AccessObjects.Add("Window", this);
         }
-
-        #region Override Functions
-        /// <inheritdoc/>
-        protected override void OnClosing(CancelEventArgs e)
-        {
-            base.OnClosing(e);
-
-            ForegroundPlayer.Pause();
-            MiddlePlayer.Pause();
-            BackgroundPlayer.Pause();
-
-            InstanceExtensions.DisposeAccessObjects(AccessObjects);
-
-            InstanceExtensions.DisposeNetworkClient(ref NetworkSlave);
-            InstanceExtensions.DisposeNetworkServer(ref NetworkMaster);
-            InstanceExtensions.DisposeProcessModule(ref ProcessModule);
-
-            InstanceExtensions.RemoveInstanceEvents(BackgroundPlayer);
-            InstanceExtensions.RemoveInstanceEvents(MiddlePlayer);
-            InstanceExtensions.RemoveInstanceEvents(ForegroundPlayer);
-
-            //Application.Current.Shutdown(0);
-            LoggerWindow.Close(true);
-
-            //ForegroundPlayer.ReleaseCore();
-            //MiddlePlayer.ReleaseCore();
-            //BackgroundPlayer.ReleaseCore();
-        }
-
-        /// <inheritdoc/>
-        protected override void OnKeyDown(KeyEventArgs e)
-        {
-            base.OnKeyUp(e);
-            if (e.IsRepeat) return;
-
-            TimerReset();
-            Log.Info($"OnKeyDown: {e.KeyboardDevice.Modifiers} - {e.Key}");
-
-            switch (e.Key)
-            {
-                case Key.D0:
-                case Key.D1:
-                case Key.D2:
-                case Key.D3:
-                case Key.D4:
-                case Key.D5:
-                case Key.D6:
-                case Key.D7:
-                case Key.D8:
-                case Key.D9:
-                    if (e.KeyboardDevice.Modifiers == ModifierKeys.None)
-                        LoadItem((ushort)(e.Key - Key.D0));
-                    break;
-
-                case Key.D:
-                    if (e.KeyboardDevice.Modifiers == ModifierKeys.Control)
-                    {
-                        log4net.Repository.Hierarchy.Logger root = ((log4net.Repository.Hierarchy.Hierarchy)log4net.LogManager.GetRepository()).Root;
-                        root.Level = (root.Level == log4net.Core.Level.Info) ? log4net.Core.Level.Debug : log4net.Core.Level.Info;
-                        Log.Warn($"Root Logger Current Level: {root.Level}");
-
-                        this.Topmost = false;
-                        this.WindowState = WindowState.Normal;
-                        this.WindowStyle = WindowStyle.SingleBorderWindow;
-                    }
-                    break;
-                case Key.R:
-                    if (e.KeyboardDevice.Modifiers == ModifierKeys.Control)
-                    {
-                        LoadConfig(MEDIA_CONFIG_FILE);
-                        //Process.Start(Process.GetCurrentProcess().MainModule.FileName);
-                        //Application.Current.Shutdown();
-                    }
-                    break;
-
-                case Key.F:
-                    this.WindowState = this.WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
-                    break;
-                case Key.S:
-                    if (!this.AllowsTransparency)
-                        this.WindowStyle = this.WindowStyle == WindowStyle.None ? WindowStyle.SingleBorderWindow : WindowStyle.None;
-                    break;
-                case Key.T:
-                    this.Topmost = !this.Topmost;
-                    break;
-
-                case Key.Down:
-                case Key.Right:
-                    NextNode();
-                    break;
-                case Key.Up:
-                case Key.Left:
-                    PrevNode();
-                    break;
-
-                case Key.Space:
-                case Key.Enter:
-                    PlayPause();
-                    break;
-
-                case Key.Escape:
-                    this.Close();
-                    Application.Current.Shutdown(0);
-                    //this.WindowState = WindowState.Normal;
-                    //this.WindowStyle = WindowStyle.SingleBorderWindow;
-                    break;
-            }
-        }
-        #endregion
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            //Create Instance
-            Modbus.Device.IModbusMaster ModbusDIO = InstanceExtensions.CreateNModbus4Master("Modbus.Master");
-            if (ModbusDIO != null) AccessObjects.TryAdd("Modbus.Master", ModbusDIO);
-            System.IO.Ports.SerialPort SerialPort = InstanceExtensions.CreateSerialPort("SerialPort.PortName", null);
-            if (SerialPort != null) AccessObjects.TryAdd("SerialPort", SerialPort);
-
-            //Create Instance
-            HPSocket.IServer NetworkServer = InstanceExtensions.CreateNetworkServer("Network.Server", OnServerReceiveEventHandler);
-            HPSocket.IClient NetworkClient = InstanceExtensions.CreateNetworkClient("Network.Client", OnClientReceiveEventHandler);
-            if (NetworkServer != null) AccessObjects.TryAdd("Network.Server", NetworkServer);
-            if (NetworkClient != null) AccessObjects.TryAdd("Network.Client", NetworkClient);
-
             InitializeTimer();
             CreateNetworkSyncObject();
 
@@ -224,50 +100,6 @@ namespace MediaPalyerPro
             LoadConfig(MEDIA_CONFIG_FILE);
         }
 
-        private HandleResult OnClientReceiveEventHandler(IClient sender, byte[] data)
-        {
-            String message = Encoding.UTF8.GetString(data);
-            Log.Info($"Client Receive Data: {message}");
-
-            TimerReset();
-
-            return HandleResult.Ok;
-        }
-        private HandleResult OnServerReceiveEventHandler(IServer sender, IntPtr connId, byte[] data)
-        {
-            String message = Encoding.UTF8.GetString(data);
-            Log.Info($"Server Receive Data: {message}");
-
-            TimerReset();
-            XElement element = null;
-
-            try
-            {
-                element = XElement.Parse(message);
-            }
-            catch (Exception ex)
-            {
-                Log.Error($"数据解析错误：{ex}");
-                return HandleResult.Ok;
-            }
-
-            try
-            {
-                this.Dispatcher.Invoke(() =>
-                {
-                    if (element.Name.LocalName == "Action")
-                        this.CallActionElement(element);
-                    else
-                        InstanceExtensions.ChangeInstancePropertyValue(this, element);
-                });
-            }
-            catch (Exception ex)
-            {
-                Log.Error($"数据执行错误：{ex}");
-            }
-
-            return HandleResult.Ok;
-        }
 
         /// <summary>
         /// 加载配置文件
@@ -298,7 +130,7 @@ namespace MediaPalyerPro
                 return;
             }
 
-            ListItems = RootConfiguration.Elements("Item");
+            ItemElements = RootConfiguration.Elements("Item");
             XAttribute autoLoop = RootConfiguration?.Attribute("AutoLoop");
             XAttribute defaultId = RootConfiguration?.Attribute("DefaultID");
 
@@ -307,17 +139,16 @@ namespace MediaPalyerPro
         }
 
         /// <summary>
-        /// 播放列表项
+        /// 加载指定 ID 项内容
         /// </summary>
-        /// <param name="id"></param>
+        /// <param name="id">指定 ID</param>
         public void LoadItem(int id)
         {
-            if (ListItems?.Count() <= 0) return;
+            if (ItemElements?.Count() <= 0) return;
 
-            IEnumerable<XElement> items = from element in ListItems
-                                          from attribute in element.Attributes()
-                                          where attribute?.Name == "ID" && attribute?.Value.Trim() == id.ToString()
-                                          select element;
+            IEnumerable<XElement> items = from item in ItemElements
+                                          where item.Attribute("ID")?.Value.Trim() == id.ToString()
+                                          select item;
 
             if (items?.Count() != 1)
             {
@@ -329,12 +160,13 @@ namespace MediaPalyerPro
             LoadItem(items.First());
         }
         /// <summary>
-        /// 播放列表项,,https://www.codenong.com/54797577/
+        /// 加载指定项内容
+        /// <para>XAML 解析参考：https://www.codenong.com/54797577/ </para>
         /// </summary>
         /// <param name="item"></param>
         protected void LoadItem(XElement item)
         {
-            if (item == null) return;
+            if (item == null || !item.HasElements) return;
 
             CurrentItem = item;
 
@@ -353,7 +185,7 @@ namespace MediaPalyerPro
             //XamlXmlReader xamlXmlReader = new XamlXmlReader(xmlReader, xamlXmlReaderSettings);
             //UIElement element = (UIElement)System.Windows.Markup.XamlReader.Load(xamlXmlReader);
 
-            MiddlePlayer.Pause();
+            CenterPlayer.Pause();
             ForegroundPlayer.Pause();
             BackgroundPlayer.Pause();
 
@@ -365,25 +197,30 @@ namespace MediaPalyerPro
                 {
                     if(element.Name.LocalName == "Action")
                     {
-                        this.CallActionElement(element);
+                        ControlInterface.TryParseControlMessage(element, out object returnResult);
                         continue;
                     }
 
-                    FrameworkElement uiElement = (FrameworkElement)InstanceExtensions.GetInstanceFieldObject(this, element.Name.LocalName);
-                    //WPFSCPlayerPro.Close()
-                    if (uiElement?.GetType() == typeof(WPFSCPlayerPro))
+                    if (!InstanceExtensions.GetInstanceFieldValue(this, element.Name.LocalName, out object objectField)) continue;
+
+                    FrameworkElement uiElement = objectField as FrameworkElement;
+                    if (uiElement == null) continue;
+
+                    if (uiElement.GetType() == typeof(WPFSCPlayerPro))
                     {
                         WPFSCPlayerPro WPFPlayer = (WPFSCPlayerPro)uiElement;
                         WPFPlayer.Source = null;
                         WPFPlayer.Close();
                     }
 
+                    uiElement.ToolTip = element;
+
                     //FrameworkElement Property
-                    InstanceExtensions.ChangeInstancePropertyValue(this, element);
+                    InstanceExtensions.SetInstancePropertyValues(this, element);
 
                     //CanvasButtons
                     //if (uiElement?.GetType() == typeof(Canvas) && element.Elements("Button")?.Count() > 0)
-                    if (uiElement.Name.IndexOf("Buttons") != 0 && element.Elements("Button")?.Count() > 0)
+                    if (uiElement.Name.IndexOf(BUTTONS) != 0 && element.Elements("Button")?.Count() > 0)
                     {
                         Panel PanelButtons = (Panel)uiElement;
                         //Clear
@@ -413,18 +250,13 @@ namespace MediaPalyerPro
                             button.ToolTip = String.Format($"{id}.{PanelButtons.Name}.{button.Name}");
                             PanelButtons.Children.Add(button);
 
-                            //if(imageBurshs.Count() > 0)
-                            //{
-                                //Console.WriteLine(item);
-                            //}
-
                         }
                     }
 
                     //Sub Element Actions
                     foreach (XElement action in element?.Elements("Action"))
                     {
-                        this.CallActionElement(action);
+                        ///this.CallActionElement(action);
                     }
 
                     //WPFSCPlayerPro.Open()
@@ -472,11 +304,11 @@ namespace MediaPalyerPro
 
                 if (element.Name.LocalName == "Action")
                 {
-                    CallActionElement(element);
+                    //CallActionElement(element);
                 }
                 else
                 {
-                    InstanceExtensions.ChangeInstancePropertyValue(this, element);
+                    InstanceExtensions.SetInstancePropertyValues(this, element);
                 }
             }
         }
@@ -515,11 +347,11 @@ namespace MediaPalyerPro
             {
                 if (element.Name.LocalName == "Action")
                 {
-                    this.CallActionElement(element);
+                    //this.CallActionElement(element);
                 }
                 else
                 {
-                    InstanceExtensions.ChangeInstancePropertyValue(this, element);
+                    InstanceExtensions.SetInstancePropertyValues(this, element);
                 }
             }
         }        
@@ -531,7 +363,7 @@ namespace MediaPalyerPro
         /// <param name="buttonName"></param>
         public void CallButtonEvent(int id, string layerName, string buttonName)
         {
-            IEnumerable<XElement> events = from item in ListItems
+            IEnumerable<XElement> events = from item in ItemElements
                                            where item.Attribute("ID")?.Value.Trim() == id.ToString()
                                            from element in item.Elements()
                                            where element.Name.LocalName == layerName
@@ -545,11 +377,11 @@ namespace MediaPalyerPro
             {
                 if (element.Name.LocalName == "Action")
                 {
-                    this.CallActionElement(element);
+                    //this.CallActionElement(element);
                 }
                 else
                 {
-                    InstanceExtensions.ChangeInstancePropertyValue(this, element);
+                    InstanceExtensions.SetInstancePropertyValues(this, element);
                 }
             }
         }
@@ -563,75 +395,8 @@ namespace MediaPalyerPro
             if (int.TryParse(CurrentItem.Attribute("ID")?.Value, out int id)) 
                 CallButtonEvent(id, layerName, buttonName);
         }
-        /// <summary>
-        /// Call Action XElement
-        /// </summary>
-        /// <param name="action"></param>
-        protected void CallActionElement(XElement action)
-        {
-            if (action?.Name?.LocalName != "Action") return;
-
-            Object target = null;
-            if (action.Attribute("TargetObj") != null)
-                target = InstanceExtensions.GetInstanceFieldObject(this, action?.Attribute("TargetObj")?.Value);
-            else if (action.Attribute("TargetKey") != null)
-                target = AccessObjects.TryGetValue(action?.Attribute("TargetKey")?.Value, out IDisposable obj) ? obj : null;
-            if (target == null)
-            {
-                Log.Warn($"未找到配置的目标对象：{action}");
-                return;
-            }
-
-            Log.Info($"准备执行目标对象配置: {action} ");
-
-            try
-            {
-                //Method
-                if (!String.IsNullOrWhiteSpace(action.Attribute("Method")?.Value))
-                {
-                    if(action.Attribute("Method").Value == "Sleep")
-                    {
-                        InstanceExtensions.CallInstanceMethod(target, action.Attribute("Method").Value, StringExtension.ConvertParameters(action.Attribute("Params").Value));
-                        return;
-                    }
-
-                    Task.Run(() =>
-                    {
-                        this.Dispatcher.Invoke(() =>
-                        {
-                            if (!String.IsNullOrWhiteSpace(action.Attribute("Params")?.Value))
-                                InstanceExtensions.CallInstanceMethod(target, action.Attribute("Method").Value, StringExtension.ConvertParameters(action.Attribute("Params").Value));
-                            else
-                                InstanceExtensions.CallInstanceMethod(target, action.Attribute("Method").Value);
-                        });
-                    });
-                }
-                //Property
-                else if (!String.IsNullOrWhiteSpace(action.Attribute("Property")?.Value) && !String.IsNullOrWhiteSpace(action.Attribute("Value")?.Value))
-                {
-
-                    Task.Run(() =>
-                    {
-                        this.Dispatcher.Invoke(() =>
-                        {
-                            InstanceExtensions.ChangeInstancePropertyValue(target, action.Attribute("Property").Value, action.Attribute("Value").Value);
-                        });
-                    });
-                }
-                //Other
-                else
-                {
-                    Log.Error($"配置格式错误：{action}");
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Error($"执行目标对象配置错误：{ex}");
-            }
-        }
-
-
-        #region Player Events Handler
+        
+#region Player Events Handler
         //private double LastTime = 0.0f;
         //private IEnumerable<XElement> onRenderEvents;
 
@@ -682,8 +447,8 @@ namespace MediaPalyerPro
             if (Log.IsDebugEnabled)
                 Log.Debug($"WPFSCPlayerPro({player.Name}) First Frame Render Evnet. URL: {player.Url}");
 
-            if (NetworkSlave != null)  //4字节心跳
-                NetworkSlave.Send(SyncMessage, SyncMessage.Length - 4, 4);
+            //if (NetworkSlave != null)  //4字节心跳
+            //    NetworkSlave.Send(SyncMessage, SyncMessage.Length - 4, 4);
 
             CallPlayerEvent(player, "OnFirstFrame");
             playerLastTimer[player.Name] = Math.Round(player.CurrentTime / 1000.0f, 2);
@@ -693,8 +458,8 @@ namespace MediaPalyerPro
             if (Log.IsDebugEnabled)
                 Log.Debug($"WPFSCPlayerPro({player.Name}) Stream Finish Event. URL: {player.Url}  ListAutoLoop: {ListAutoLoop}");
 
-            if (NetworkSlave != null)  //4字节心跳
-                NetworkSlave.Send(SyncMessage, SyncMessage.Length - 4, 4);
+            //if (NetworkSlave != null)  //4字节心跳
+            //    NetworkSlave.Send(SyncMessage, SyncMessage.Length - 4, 4);
 
             CallPlayerEvent(player, "OnLastFrame");
 
@@ -713,7 +478,7 @@ namespace MediaPalyerPro
             
             CheckNetworkSyncStatus();
         }
-        #endregion
+#endregion
         private void UIElement_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
             if (!this.IsLoaded) return;
@@ -728,7 +493,7 @@ namespace MediaPalyerPro
             else if(type == typeof(Grid))
             {
                 Grid grid = (Grid)sender;
-                string name = grid.Name.Replace(CONTAINER_NAME, PLAYER_NAME);
+                string name = grid.Name.Replace(CONTAINER, PLAYER);
                 player = this.FindName(name) as WPFSCPlayerPro;
             }
 
@@ -743,7 +508,7 @@ namespace MediaPalyerPro
             }
 
             CurrentPlayer = ForegroundPlayer.Visibility == Visibility.Visible ? ForegroundPlayer :
-                            MiddlePlayer.Visibility == Visibility.Visible ? MiddlePlayer :
+                            CenterPlayer.Visibility == Visibility.Visible ? CenterPlayer :
                             BackgroundPlayer.Visibility == Visibility.Visible ? BackgroundPlayer : null;
         }
         
@@ -763,24 +528,6 @@ namespace MediaPalyerPro
                 CallButtonEvent(button);
             }
         }
-        private void Window_MouseDown(object sender, MouseButtonEventArgs e)
-        {
-            if (Log.IsDebugEnabled) Log.Debug($"Window Mouse Down.");
-            TimerReset();
-        }
-
-        /// <summary>
-        /// 打印 Player 属性信息
-        /// </summary>
-        public void PlayerVideoInfo()
-        {
-            Type type = ForegroundPlayer.GetType();
-            PropertyInfo[] properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
-            foreach (PropertyInfo property in properties)
-            {
-                Log.InfoFormat("{0}: {1}", property.Name, property.GetValue(ForegroundPlayer));
-            }
-        }
 
         private void WPFSCPlayerPro_MouseDown(object sender, MouseButtonEventArgs e)
         {
@@ -792,6 +539,20 @@ namespace MediaPalyerPro
                 player.Play();
             else
                 player.Pause();
+        }
+
+
+        /// <summary>
+        /// 打印 Player 属性信息
+        /// </summary>
+        public void PlayerVideoInfo()
+        {
+            Type type = ForegroundPlayer.GetType();
+            PropertyInfo[] properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            foreach (PropertyInfo property in properties)
+            {
+                Log.Info($"{property.Name}: {property.GetValue(ForegroundPlayer)}");
+            }
         }
 
         private void OnRenderAudioEvent(WPFSCPlayerPro player, IntPtr arg2, int arg3)
@@ -809,5 +570,6 @@ namespace MediaPalyerPro
             });
             
         }
+
     }
 }

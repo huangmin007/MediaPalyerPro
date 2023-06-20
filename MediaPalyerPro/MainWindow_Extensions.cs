@@ -16,7 +16,7 @@ namespace MediaPalyerPro
         /// <param name="volume"></param>
         public void SetVolume(float volume)
         {
-            MiddlePlayer.SetVolume(volume);
+            CenterPlayer.SetVolume(volume);
             BackgroundPlayer.SetVolume(volume);
             ForegroundPlayer.SetVolume(volume);
         }
@@ -26,7 +26,7 @@ namespace MediaPalyerPro
         /// </summary>
         public void VolumeUp()
         {
-            MiddlePlayer.VolumeUp();
+            CenterPlayer.VolumeUp();
             BackgroundPlayer.VolumeUp();
             ForegroundPlayer.VolumeUp();
         }
@@ -35,7 +35,7 @@ namespace MediaPalyerPro
         /// </summary>
         public void VolumeDown()
         {
-            MiddlePlayer.VolumeDown();
+            CenterPlayer.VolumeDown();
             BackgroundPlayer.VolumeDown();
             ForegroundPlayer.VolumeDown();
         }

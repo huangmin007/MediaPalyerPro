@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Data;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Windows;
+﻿using System.Windows;
+using SpaceCG.Generic;
 
 namespace MediaPalyerPro
 {
@@ -13,7 +8,7 @@ namespace MediaPalyerPro
     /// </summary>
     public partial class App : Application
     {
-        public static readonly log4net.ILog Log = log4net.LogManager.GetLogger(nameof(App));
+        public static readonly LoggerTrace Log = new LoggerTrace(nameof(App));
 
         protected override void OnStartup(StartupEventArgs e)
         {

@@ -7,7 +7,7 @@
         xmlns:sttplay="clr-namespace:Sttplay.MediaPlayer"
         mc:Ignorable="d"
         Height="720" Width="1280" Background="#00FFFFFF" 
-        Loaded="Window_Loaded" MouseDown="Window_MouseDown" Name="_window" >
+        Loaded="Window_Loaded" DragDrop.Drop="Window_Drop" >
     <Window.Resources>
         <Style TargetType="Button">
             <Setter Property="Cursor" Value="Hand"/>
@@ -74,13 +74,13 @@
     <Viewbox Name="ViewboxContainer" Stretch="Uniform" ClipToBounds="True" Focusable="False">
 
         <Grid Name="RootContainer" Focusable="False" Width="1280" Height="720" >
-            <!-- BackgroundGroup -->
+            <!-- Background -->
             <Grid x:Name="BackgroundContainer" Visibility="Visible" Background="Black" IsVisibleChanged="UIElement_IsVisibleChanged">
                 <sttplay:WPFSCPlayerPro x:Name="BackgroundPlayer"
                     OpenMode="Link" AutoOpen="True" OpenAndPlay="True" Loop="True" Volume="0.8"
                     
                     IsVisibleChanged="UIElement_IsVisibleChanged"
-                                        
+                     
                     onCaptureOpenCallbackEvent="OnCaptureOpenCallbackEvent"
                     onRenderFrameEvent="OnRenderFrameEventHandler"
                     onStreamFinishedEvent="OnStreamFinishedEventHandler"
@@ -92,9 +92,9 @@
                 <Canvas x:Name="BackgroundButtons" ToolTipService.IsEnabled="False"></Canvas>
             </Grid>
 
-            <!-- MiddleGroup -->
-            <Grid x:Name="MiddleContainer" Visibility="Hidden" Background="Black" IsVisibleChanged="UIElement_IsVisibleChanged">
-                <sttplay:WPFSCPlayerPro x:Name="MiddlePlayer"
+            <!-- Center -->
+            <Grid x:Name="CenterContainer" Visibility="Hidden" Background="Black" IsVisibleChanged="UIElement_IsVisibleChanged">
+                <sttplay:WPFSCPlayerPro x:Name="CenterPlayer"
                     OpenMode="Link" AutoOpen="True" OpenAndPlay="True" Loop="True" Volume="0.8"
                                         
                     IsVisibleChanged="UIElement_IsVisibleChanged"
@@ -106,10 +106,10 @@
                     onStatusChangeEvent="OnStatusChangeEvent"
                     />
 
-                <Canvas x:Name="MiddleButtons" ToolTipService.IsEnabled="False"></Canvas>
+                <Canvas x:Name="CenterButtons" ToolTipService.IsEnabled="False"></Canvas>
             </Grid>
 
-            <!-- ForegroundGroup -->
+            <!-- Foreground -->
             <Grid x:Name="ForegroundContainer" Visibility="Hidden" Background="Black" IsVisibleChanged="UIElement_IsVisibleChanged">
                 <sttplay:WPFSCPlayerPro x:Name="ForegroundPlayer" 
                     OpenMode="Link" AutoOpen="True" OpenAndPlay="True" Loop="True" Volume="0.8"  

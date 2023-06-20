@@ -2,17 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.Xml.Linq;
 using System.Xml;
 
@@ -23,7 +13,7 @@ namespace Test
     /// </summary>
     public partial class MainWindow : Window
     {
-        private XElement RootElement = null;
+        private XElement RootConfiguration = null;
         private IEnumerable<XElement> ListItems;
 
         public MainWindow()
@@ -52,8 +42,8 @@ namespace Test
                 XmlReader reader = XmlReader.Create(fileName, settings);
 
                 //RootElement = XElement.Load(fileName);
-                RootElement = XElement.Load(reader, LoadOptions.None);
-                ListItems = RootElement.Elements("Item");
+                RootConfiguration = XElement.Load(reader, LoadOptions.None);
+                ListItems = RootConfiguration.Elements("Item");
 
                 //Console.WriteLine(RootElement);
             }
@@ -68,10 +58,10 @@ namespace Test
             //var templates = RootElement.Elements("Template");
             //ReplaceTemplateElements(templates, items, true);
 
-            ReplaceTemplateElements(RootElement, "Template", "RefTemplate", true);
+            ReplaceTemplateElements(RootConfiguration, "Template", "RefTemplate", true);
 
             Console.WriteLine("\r\n\r\n");
-            Console.WriteLine(RootElement);
+            Console.WriteLine(RootConfiguration);
         }
 
         /// <summary>

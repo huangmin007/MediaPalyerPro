@@ -5,8 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using HPSocket;
+using SpaceCG.Extensions;
 using SpaceCG.Generic;
+using SpaceCG.Net;
 using Sttplay.MediaPlayer;
 
 namespace MediaPalyerPro
@@ -16,11 +17,11 @@ namespace MediaPalyerPro
         /// <summary>
         /// 多端同步，从机对象
         /// </summary>
-        private HPSocket.IClient NetworkSlave;
+        private IAsyncClient NetworkSlave;
         /// <summary>
         /// 多端同步，主机对象
         /// </summary>
-        private HPSocket.IServer NetworkMaster;
+        private IAsyncServer NetworkMaster;
 
         /// <summary>
         /// 多端同步校准误差时间(ms)
@@ -44,21 +45,19 @@ namespace MediaPalyerPro
         /// </summary>
         private void CreateNetworkSyncObject()
         {
-            if(!String.IsNullOrWhiteSpace(ConfigurationManager.AppSettings["Synchronize.Player"]))
+            if (!InstanceExtensions.GetInstanceFieldValue(this, ConfigurationManager.AppSettings["Synchronize.Player"], out object player)) return;
+
+            if (player.GetType() == typeof(WPFSCPlayerPro))
             {
-                object player = InstanceExtensions.GetInstanceFieldObject(this, ConfigurationManager.AppSettings["Synchronize.Player"]);
-                if(player.GetType() == typeof(WPFSCPlayerPro))
-                {
-                    SyncPlayer = (WPFSCPlayerPro)player;
-                }
+                SyncPlayer = (WPFSCPlayerPro)player;
             }
 
             if (SyncPlayer == null) return;
 
             //多端同步
-            NetworkSlave = InstanceExtensions.CreateNetworkClient("Synchronize.Slave", OnUdpSyncClientReceiveEventHandler);
-            if (NetworkSlave == null)
-                NetworkMaster = InstanceExtensions.CreateNetworkServer("Synchronize.Master", OnUdpSyncServerReceiveEventHandler);
+            //NetworkSlave = InstanceExtensions.CreateNetworkClient("Synchronize.Slave", OnUdpSyncClientReceiveEventHandler);
+            //if (NetworkSlave == null)
+            //    NetworkMaster = InstanceExtensions.CreateNetworkServer("Synchronize.Master", OnUdpSyncServerReceiveEventHandler);
 
             if (NetworkMaster != null && ushort.TryParse(ConfigurationManager.AppSettings["Synchronize.Calibr"], out ushort calibr)) SyncCalibr = calibr;
             if (NetworkMaster != null && ushort.TryParse(ConfigurationManager.AppSettings["Synchronize.WaitCount"], out ushort waitCount)) SyncWaitCount = waitCount;
@@ -69,7 +68,7 @@ namespace MediaPalyerPro
         {
             if (SyncPlayer == null || NetworkMaster == null) return;
 
-            List<IntPtr> clients = NetworkMaster.GetAllConnectionIds();
+            List<IntPtr> clients = null;// NetworkMaster.GetAllConnectionIds();
             //Console.WriteLine($"clients: {clients.Count()}");
             if (clients.Count > 0)
             {
@@ -89,11 +88,11 @@ namespace MediaPalyerPro
                 byte[] dt = BitConverter.GetBytes((int)SyncPlayer.Duration);        //4 Bytes  视频的持续时长
                 Array.Copy(dt, 0, SyncMessage, SyncMessage.Length - dt.Length, dt.Length);
 
-                foreach (IntPtr client in clients)
-                    NetworkMaster.Send(client, SyncMessage, SyncMessage.Length);
+                //foreach (IntPtr client in clients)
+                //    NetworkMaster.Send(client, SyncMessage, SyncMessage.Length);
             }
         }
-
+#if false
         private HandleResult OnUdpSyncClientReceiveEventHandler(IClient sender, byte[] data)
         {
             if (SyncPlayer == null || NetworkMaster != null || data.Length != SyncMessage.Length) return HandleResult.Ok;
@@ -165,6 +164,6 @@ namespace MediaPalyerPro
 
             return HandleResult.Ok;
         }
-        
+#endif
     }
 }
