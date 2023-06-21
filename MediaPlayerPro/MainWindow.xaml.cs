@@ -3,16 +3,16 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Xml.Linq;
 using System.Reflection;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
-using System.Xaml;
-using System.Xml;
-using System.Xml.Linq;
-using SpaceCG.Extensions;
-using SpaceCG.Generic;
 using Sttplay.MediaPlayer;
+using System.Windows.Controls;
+using System.Xml;
+using System.Xaml;
+using SpaceCG.Generic;
+using SpaceCG.Extensions;
 
 namespace MediaPlayerPro
 {
@@ -53,6 +53,7 @@ namespace MediaPlayerPro
         /// </summary>
         private static List<String> DisableAttributes = new List<string>() { "Name", "Content" };
 
+
         /// <summary>
         /// 当前播放器
         /// </summary>
@@ -66,8 +67,8 @@ namespace MediaPlayerPro
         {
             InitializeComponent();
             SetInstancePropertyValues(this, "Window.");
-            this.Title = "Meida Player Pro (v1.0.20230620)";
-            //this.Title = "Meida Player Pro " + (!String.IsNullOrWhiteSpace(this.Title) ? $"({this.Title})" : "");
+            this.Title = "Meida Player Pro v1.0.20230620";
+            this.Title = "Meida Player Pro " + (!String.IsNullOrWhiteSpace(this.Title) ? $"({this.Title})" : "");
 
             LoggerWindow = new LoggerWindow();
             ProcessModule = CreateProcessModule("Process.FileName");
@@ -78,7 +79,7 @@ namespace MediaPlayerPro
 
             this.RootContainer.Width = this.Width;
             this.RootContainer.Height = this.Height;
-            foreach(FrameworkElement child in LogicalTreeHelper.GetChildren(RootContainer))
+            foreach (FrameworkElement child in LogicalTreeHelper.GetChildren(RootContainer))
             {
                 FrameworkElements.Add(child.Name);
                 child.Width = this.Width;
@@ -121,13 +122,13 @@ namespace MediaPlayerPro
                     IgnoreWhitespace = true,
                     NameTable = new NameTable(),
                 };
-                
+
                 XmlNamespaceManager xmlns = new XmlNamespaceManager(xmlReaderSettings.NameTable);
                 xmlns.AddNamespace("", "http://schemas.microsoft.com/winfx/2006/xaml/presentation");
                 xmlns.AddNamespace("x", "http://schemas.microsoft.com/winfx/2006/xaml");
                 xmlns.AddNamespace("d", "http://schemas.microsoft.com/expression/blend/2008");
                 xmlns.AddNamespace("mc", "http://schemas.openxmlformats.org/markup-compatibility/2006");
-                xmlns.AddNamespace("local", "clr-namespace:MediaPlayerPro");
+                xmlns.AddNamespace("local", "clr-namespace:MediaPalyerPro");
                 xmlns.AddNamespace("sttplay", "clr-namespace:Sttplay.MediaPlayer");
                 xmlParserContext = new XmlParserContext(null, xmlns, "", XmlSpace.Preserve);
                 xamlXmlReaderSettings = new XamlXmlReaderSettings();
@@ -164,7 +165,7 @@ namespace MediaPlayerPro
             catch (Exception ex)
             {
                 Log.Error($"读取 {fileName}错误, 文件格式错误：{ex}");
-                if(MessageBox.Show($"退出程序？\r\n{ex.ToString()}", "配置文件格式错误", MessageBoxButton.OKCancel, MessageBoxImage.Error, MessageBoxResult.OK) == MessageBoxResult.OK)
+                if (MessageBox.Show($"退出程序？\r\n{ex.ToString()}", "配置文件格式错误", MessageBoxButton.OKCancel, MessageBoxImage.Error, MessageBoxResult.OK) == MessageBoxResult.OK)
                 {
                     this.Close();
                     Application.Current.Shutdown(0);
@@ -231,7 +232,7 @@ namespace MediaPlayerPro
             {
                 foreach (XElement element in item.Elements())
                 {
-                    if(element.Name.LocalName == "Action")
+                    if (element.Name.LocalName == "Action")
                     {
                         ControlInterface.TryParseControlMessage(element, out object returnResult);
                         continue;
@@ -316,7 +317,7 @@ namespace MediaPlayerPro
                         CurrentPlayer.Play();
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Log.Error($"配置解析或是执行异常：{ex}");
                 MessageBox.Show($"配置解析或是执行异常：\r\n{ex}", "Error", MessageBoxButton.OK);
@@ -404,7 +405,7 @@ namespace MediaPlayerPro
                     InstanceExtensions.SetInstancePropertyValues(this, element);
                 }
             }
-        }        
+        }
         /// <summary>
         /// Call指定项页面的按扭事件
         /// </summary>
@@ -440,13 +441,13 @@ namespace MediaPlayerPro
         /// </summary>
         /// <param name="layerName"></param>
         /// <param name="buttonName"></param>
-        public void CallButtonEvent(string layerName, string buttonName) 
+        public void CallButtonEvent(string layerName, string buttonName)
         {
-            if (int.TryParse(CurrentItem.Attribute("ID")?.Value, out int id)) 
+            if (int.TryParse(CurrentItem.Attribute("ID")?.Value, out int id))
                 CallButtonEvent(id, layerName, buttonName);
         }
-        
-#region Player Events Handler
+
+        #region Player Events Handler
         //private double LastTime = 0.0f;
         //private IEnumerable<XElement> onRenderEvents;
 
@@ -462,7 +463,7 @@ namespace MediaPlayerPro
 
             if (!playerLastTimer.ContainsKey(player.Name))
                 playerLastTimer.Add(player.Name, 0.0f);
-            if(!playerRenderEvents.ContainsKey(player.Name))
+            if (!playerRenderEvents.ContainsKey(player.Name))
                 playerRenderEvents.Add(player.Name, null);
 
             playerRenderEvents[player.Name] = null;
@@ -472,8 +473,8 @@ namespace MediaPlayerPro
                 if (events.Count() > 0)
                 {
                     playerRenderEvents[player.Name] = from ev in events
-                                                  where ev.Attribute("Name")?.Value == "OnRenderFrame"
-                                                  select ev;
+                                                      where ev.Attribute("Name")?.Value == "OnRenderFrame"
+                                                      select ev;
                     if (playerRenderEvents[player.Name].Count() == 0) playerRenderEvents[player.Name] = null;
                     //Console.WriteLine("COUNT>>>>>>>>");
                 }
@@ -525,10 +526,10 @@ namespace MediaPlayerPro
         {
             if (Log.IsDebugEnabled)
                 Log.Debug($"WPFSCPlayerPro({player.Name}) Status Chagned Evnet. IsPaused: {player.IsPaused}");
-            
+
             CheckNetworkSyncStatus();
         }
-#endregion
+        #endregion
         private void UIElement_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
             Type type = sender.GetType();
@@ -540,7 +541,7 @@ namespace MediaPlayerPro
             {
                 player = (WPFSCPlayerPro)sender;
             }
-            else if(type == typeof(Grid))
+            else if (type == typeof(Grid))
             {
                 Grid grid = (Grid)sender;
                 string playerName = grid.Name.Replace(CONTAINER, PLAYER);
@@ -561,7 +562,7 @@ namespace MediaPlayerPro
                             CenterContainer.Visibility == Visibility && CenterPlayer.Visibility == Visibility.Visible ? CenterPlayer :
                             BackgroundContainer.Visibility == Visibility && BackgroundPlayer.Visibility == Visibility.Visible ? BackgroundPlayer : null;
         }
-        
+
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             Button button = (Button)sender;
@@ -618,7 +619,7 @@ namespace MediaPlayerPro
                     playerLastTimer[player.Name] = currentTime;
                 }
             });
-            
+
         }
 
     }

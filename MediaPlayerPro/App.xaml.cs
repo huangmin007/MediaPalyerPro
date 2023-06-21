@@ -1,5 +1,10 @@
-﻿using System.Windows;
-using SpaceCG.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Configuration;
+using System.Data;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Windows;
 
 namespace MediaPlayerPro
 {
@@ -8,18 +13,5 @@ namespace MediaPlayerPro
     /// </summary>
     public partial class App : Application
     {
-        public static readonly LoggerTrace Log = new LoggerTrace(nameof(App));
-
-        protected override void OnStartup(StartupEventArgs e)
-        {
-            base.OnStartup(e);
-            this.ShutdownMode = ShutdownMode.OnMainWindowClose;
-            this.DispatcherUnhandledException += App_DispatcherUnhandledException;
-        }
-
-        private void App_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
-        {
-            Log.Error($"应用程序未处理的异常：{e.Exception}");
-        }
     }
 }

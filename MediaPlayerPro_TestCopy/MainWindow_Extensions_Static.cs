@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
@@ -218,7 +217,7 @@ namespace MediaPlayerPro
         /// <param name="rootElements"></param>
         private static void CheckAndUpdateElements(XElement rootElements)
         {
-            foreach (XElement element in rootElements.Descendants())
+            foreach(XElement element in rootElements.Descendants())
             {
                 string localName = element.Name.LocalName;
 
@@ -227,11 +226,12 @@ namespace MediaPlayerPro
                 {
                     XAttribute imageSource = element.Attribute("ImageSource");
                     imageSource.Value = Path.Combine(Environment.CurrentDirectory, imageSource?.Value);
+                    Console.WriteLine($"=>>{ Path.Combine(Environment.CurrentDirectory, imageSource?.Value)}");
                 }
                 //1.移除显示对象不可访问的属性
                 else if (FrameworkElements.IndexOf(localName) != -1)
                 {
-                    foreach (string xname in DisableAttributes)
+                    foreach(string xname in DisableAttributes)
                     {
                         var attribute = element.Attribute(xname);
                         if (attribute != null) attribute.Remove();
@@ -255,7 +255,7 @@ namespace MediaPlayerPro
             OldElementName.Add("ForegroundGroup", $"{FOREGROUND}{CONTAINER}");
             OldElementName.Add("BackgroundGroup", $"{BACKGROUND}{CONTAINER}");
 
-            foreach (var element in rootElements.Descendants())
+            foreach(var element in rootElements.Descendants())
             {
                 string localName = element.Name.LocalName;
                 if (!OldElementName.ContainsKey(localName)) continue;

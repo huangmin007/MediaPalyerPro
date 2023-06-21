@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MediaPlayerPro" 
         xmlns:sttplay="clr-namespace:Sttplay.MediaPlayer;assembly=Sttplay.MediaPlayer"
-        mc:Ignorable="d"
+        mc:Ignorable="d" Title="Media Player Pro"
         Height="720" Width="1280" Background="#00FFFFFF" 
         Loaded="Window_Loaded" DragDrop.Drop="Window_Drop">
     <Window.Resources>
@@ -69,7 +69,7 @@
             <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality"/>
             <EventSetter Event="Mouse.MouseDown" Handler="WPFSCPlayerPro_MouseDown"/>
         </Style>
-        
+
     </Window.Resources>
     <Viewbox Name="ViewboxContainer" Stretch="Uniform" ClipToBounds="True" Focusable="False">
 
@@ -133,10 +133,10 @@
                     -->
                 </Canvas>
             </Grid>
-            
-            
+
+
         </Grid>
-        
-        
+
+
     </Viewbox>
 </Window>
