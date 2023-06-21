@@ -21,19 +21,36 @@ namespace MediaPalyerPro
         protected override void OnClosing(CancelEventArgs e)
         {
             base.OnClosing(e);
-
-            ControlInterface?.Dispose();
-
-            LoggerWindow?.Close();
-            DisposeProcessModule(ref ProcessModule);
-
-            CenterPlayer.Pause();
-            ForegroundPlayer.Pause();
-            BackgroundPlayer.Pause();
+            Console.WriteLine("Closing ... ");
+            foreach (FrameworkElement child in LogicalTreeHelper.GetChildren(RootContainer))
+            {
+                child.IsVisibleChanged -= UIElement_IsVisibleChanged;
+                foreach (FrameworkElement subChild in LogicalTreeHelper.GetChildren(child))
+                {
+                    subChild.IsVisibleChanged -= UIElement_IsVisibleChanged;
+                }
+            }
 
             InstanceExtensions.RemoveInstanceEvents(CenterPlayer);
             InstanceExtensions.RemoveInstanceEvents(ForegroundPlayer);
             InstanceExtensions.RemoveInstanceEvents(BackgroundPlayer);
+
+            this.Pause();
+            Timer?.Dispose();
+            LoggerWindow?.Close();
+            ControlInterface?.Dispose();
+
+            DisposeProcessModule(ref ProcessModule);
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            base.OnClosed(e);
+            Console.WriteLine("Closed ... ");
+
+            if (IsVideoFile(CenterPlayer?.Url)) CenterPlayer.ReleaseCore();
+            if (IsVideoFile(ForegroundPlayer?.Url)) ForegroundPlayer.ReleaseCore();
+            if (IsVideoFile(BackgroundPlayer?.Url)) BackgroundPlayer.ReleaseCore();
         }
 
         /// <inheritdoc/>

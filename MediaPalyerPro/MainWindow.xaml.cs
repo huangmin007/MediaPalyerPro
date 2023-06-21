@@ -45,10 +45,22 @@ namespace MediaPalyerPro
         private LoggerWindow LoggerWindow;
 
         /// <summary>
+        /// 元素名称
+        /// </summary>
+        private static List<String> FrameworkElements = new List<String>();
+        /// <summary>
+        /// 元素禁用属性
+        /// </summary>
+        private static List<String> DisableAttributes = new List<string>() { "Name", "Content" };
+
+
+        /// <summary>
         /// 当前播放器
         /// </summary>
         private WPFSCPlayerPro CurrentPlayer;
-
+        /// <summary>
+        /// 控制接口
+        /// </summary>
         private ControlInterface ControlInterface;
 
         public MainWindow()
@@ -69,13 +81,25 @@ namespace MediaPalyerPro
             this.RootContainer.Height = this.Height;
             foreach(FrameworkElement child in LogicalTreeHelper.GetChildren(RootContainer))
             {
+                FrameworkElements.Add(child.Name);
                 child.Width = this.Width;
                 child.Height = this.Height;
+#if DEBUG
+                child.SetValue(ToolTipService.IsEnabledProperty, true);
+#else
+                child.SetValue(ToolTipService.IsEnabledProperty, false);
+#endif
                 Console.WriteLine($"FrameworkElement: {child.Name}({child})");
                 foreach (FrameworkElement subChild in LogicalTreeHelper.GetChildren(child))
                 {
+                    FrameworkElements.Add(subChild.Name);
                     subChild.Width = this.Width;
                     subChild.Height = this.Height;
+#if DEBUG
+                    subChild.SetValue(ToolTipService.IsEnabledProperty, true);
+#else
+                    subChild.SetValue(ToolTipService.IsEnabledProperty, false);
+#endif
                     Console.WriteLine($"\tFrameworkElement: {subChild.Name}({subChild})");
                 }
             }
@@ -85,8 +109,32 @@ namespace MediaPalyerPro
             ControlInterface.AccessObjects.Add("Window", this);
         }
 
+        XmlParserContext xmlParserContext;
+        XmlReaderSettings xmlReaderSettings;
+        XamlXmlReaderSettings xamlXmlReaderSettings;
+
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
+            {
+                xmlReaderSettings = new XmlReaderSettings
+                {
+                    IgnoreComments = true,
+                    IgnoreWhitespace = true,
+                    NameTable = new NameTable(),
+                };
+                
+                XmlNamespaceManager xmlns = new XmlNamespaceManager(xmlReaderSettings.NameTable);
+                xmlns.AddNamespace("", "http://schemas.microsoft.com/winfx/2006/xaml/presentation");
+                xmlns.AddNamespace("x", "http://schemas.microsoft.com/winfx/2006/xaml");
+                xmlns.AddNamespace("d", "http://schemas.microsoft.com/expression/blend/2008");
+                xmlns.AddNamespace("mc", "http://schemas.openxmlformats.org/markup-compatibility/2006");
+                xmlns.AddNamespace("local", "clr-namespace:MediaPalyerPro");
+                xmlns.AddNamespace("sttplay", "clr-namespace:Sttplay.MediaPlayer");
+                xmlParserContext = new XmlParserContext(null, xmlns, "", XmlSpace.Preserve);
+                xamlXmlReaderSettings = new XamlXmlReaderSettings();
+                xamlXmlReaderSettings.LocalAssembly = Assembly.GetExecutingAssembly();
+            }
+
             InitializeTimer();
             CreateNetworkSyncObject();
 
@@ -105,13 +153,13 @@ namespace MediaPalyerPro
 
             try
             {
-                XmlReaderSettings settings = new XmlReaderSettings();
-                settings.IgnoreComments = true;
-                settings.IgnoreWhitespace = true;
-                XmlReader reader = XmlReader.Create(fileName, settings);
+                using (XmlReader reader = XmlReader.Create(fileName, xmlReaderSettings))
+                {
+                    RootConfiguration = XElement.Load(reader, LoadOptions.None);
+                }
 
-                RootConfiguration = XElement.Load(reader, LoadOptions.None);
-                ReplaceImageBrushSource(RootConfiguration);
+                CompatibleProcess(RootConfiguration);
+                CheckAndUpdateElements(RootConfiguration);
                 XElementExtensions.ReplaceTemplateElements(RootConfiguration, "Template", "RefTemplate", true);
             }
             catch (Exception ex)
@@ -180,21 +228,6 @@ namespace MediaPalyerPro
             CurrentItem = item;
             CurrentItemID = int.TryParse(CurrentItem.Attribute("ID")?.Value, out int value) ? value : int.MinValue;
 
-            XmlReaderSettings settings = new XmlReaderSettings { NameTable = new NameTable() };
-            XmlNamespaceManager xmlns = new XmlNamespaceManager(settings.NameTable);
-            xmlns.AddNamespace("", "http://schemas.microsoft.com/winfx/2006/xaml/presentation");
-            xmlns.AddNamespace("x", "http://schemas.microsoft.com/winfx/2006/xaml");
-            xmlns.AddNamespace("d", "http://schemas.microsoft.com/expression/blend/2008");
-            xmlns.AddNamespace("mc", "http://schemas.openxmlformats.org/markup-compatibility/2006");
-            xmlns.AddNamespace("local", "clr-namespace:MediaPalyerPro");
-            XmlParserContext context = new XmlParserContext(null, xmlns, "", XmlSpace.Preserve);
-            XamlXmlReaderSettings xamlXmlReaderSettings = new XamlXmlReaderSettings();
-            xamlXmlReaderSettings.LocalAssembly = System.Reflection.Assembly.GetExecutingAssembly();
-            
-            CenterPlayer.Pause();
-            ForegroundPlayer.Pause();
-            BackgroundPlayer.Pause();
-
             try
             {
                 foreach (XElement element in item.Elements())
@@ -205,47 +238,66 @@ namespace MediaPalyerPro
                         continue;
                     }
 
-                    if (!InstanceExtensions.GetInstanceFieldValue(this, element.Name.LocalName, out object objectField)) continue;
-                    FrameworkElement uiElement = objectField as FrameworkElement;
-                    if (uiElement == null) continue;
-
-                    //WPFSCPlayerPro.Close()
-                    if (uiElement.GetType() == typeof(WPFSCPlayerPro))
+                    if (FrameworkElements.IndexOf(element.Name.LocalName) == -1)
                     {
-                        WPFSCPlayerPro WPFPlayer = (WPFSCPlayerPro)uiElement;
-                        WPFPlayer.Source = null;
-                        WPFPlayer.Close();
+                        Log.Warn($"不支持的配置子项：{element}");
+                        continue;
                     }
 
-                    //FrameworkElement Property
-                    InstanceExtensions.SetInstancePropertyValues(this, element);
-
-                    //ToolTip
-                    uiElement.ToolTip = element;
-
-                    //Buttons
-                    if (uiElement.Name.IndexOf(BUTTONS) != 0 && element.Elements("Button")?.Count() > 0)
+                    if (!InstanceExtensions.GetInstanceFieldValue(this, element.Name.LocalName, out object objectField) || objectField == null)
                     {
-                        Panel PanelButtons = (Panel)uiElement;
-                        //Clear
-                        PanelButtons.Children.Clear();
-                        PanelButtons.ToolTip = CurrentItemID.ToString();
-                        //Add
-                        foreach (XElement btnElement in element.Elements("Button"))
+                        Log.Warn($"获取对象字段失败");
+                        continue;
+                    }
+
+                    FrameworkElement uiElement = objectField as FrameworkElement;
+                    if (uiElement == null)
+                    {
+                        Log.Warn($"实例窗体不存的字段对象 {objectField}");
+                        continue;
+                    }
+
+                    if (uiElement.ToolTip != element)
+                    {
+                        //WPFSCPlayerPro.Close()
+                        if (uiElement.GetType() == typeof(WPFSCPlayerPro) && uiElement.Name.IndexOf(PLAYER) != -1)
                         {
-                            using (StringReader stringReader = new StringReader(btnElement.ToString()))
+                            WPFSCPlayerPro WPFPlayer = (WPFSCPlayerPro)uiElement;
+                            Console.WriteLine($"{WPFPlayer.Name} Source: {WPFPlayer.Source}  Url: {WPFPlayer.Url}");
+
+                            if (IsVideoFile(WPFPlayer.Url)) WPFPlayer.Close();
+                            WPFPlayer.Source = null;
+                        }
+
+                        //ToolTip
+                        uiElement.ToolTip = element;
+                        //FrameworkElement Property
+                        InstanceExtensions.SetInstancePropertyValues(this, element);
+
+                        //Buttons
+                        if (uiElement.GetType() == typeof(Canvas) && uiElement.Name.IndexOf(BUTTONS) != -1 && element.Elements("Button")?.Count() > 0)
+                        {
+                            Panel PanelButtons = (Panel)uiElement;
+                            //Clear
+                            PanelButtons.Children.Clear();
+                            //Add
+                            foreach (XElement btnElement in element.Elements("Button"))
                             {
-                                using (XmlReader xmlReader = XmlReader.Create(stringReader, settings, context))
+                                using (StringReader stringReader = new StringReader(btnElement.ToString()))
                                 {
-                                    using (XamlXmlReader xamlXmlReader = new XamlXmlReader(xmlReader, xamlXmlReaderSettings))
+                                    using (XmlReader xmlReader = XmlReader.Create(stringReader, xmlReaderSettings, xmlParserContext))
                                     {
-                                        Button button = (Button)System.Windows.Markup.XamlReader.Load(xamlXmlReader);
-                                        button.ToolTip = String.Format($"{CurrentItemID}.{PanelButtons.Name}.{button.Name}");
-                                        PanelButtons.Children.Add(button);
+                                        using (XamlXmlReader xamlXmlReader = new XamlXmlReader(xmlReader, xamlXmlReaderSettings))
+                                        {
+                                            Button button = System.Windows.Markup.XamlReader.Load(xamlXmlReader) as Button;
+                                            button.ToolTip = String.Format($"{CurrentItemID}.{PanelButtons.Name}.{button.Name}");
+                                            PanelButtons.Children.Add(button);
+                                        }
                                     }
                                 }
                             }
                         }
+
                     }
 
                     //Sub Element Actions
@@ -253,19 +305,22 @@ namespace MediaPalyerPro
                     {
                         ControlInterface.TryParseControlMessage(action, out object returnResult);
                     }
+                }
 
-                    //WPFSCPlayerPro.Open()
-                    if (uiElement.GetType() == typeof(WPFSCPlayerPro))
-                    {
-                        WPFSCPlayerPro WPFPlayer = (WPFSCPlayerPro)uiElement;
-                        if(WPFPlayer.AutoOpen) WPFPlayer.Open(MediaType.Link, null);
-                    }
+                Console.WriteLine($"CurrentPlayer: {CurrentPlayer.Name} {CurrentPlayer.Url} {CurrentPlayer.OpenSuccessed}");
+                //CurrentPlayer.Open() And Play()
+                if (CurrentPlayer != null && IsVideoFile(CurrentPlayer.Url))
+                {
+                    if ((CurrentPlayer.AutoOpen || CurrentPlayer.OpenAndPlay) && !CurrentPlayer.OpenSuccessed)
+                        CurrentPlayer.Open(MediaType.Link, null);
+                    else
+                        CurrentPlayer.Play();
                 }
             }
             catch(Exception ex)
             {
-                Log.Error($"加载配置项错误：{ex}");
-                MessageBox.Show("解析配置错误", "Error", MessageBoxButton.OK);
+                Log.Error($"配置解析或是执行异常：{ex}");
+                MessageBox.Show($"配置解析或是执行异常：\r\n{ex}", "Error", MessageBoxButton.OK);
             }
 
             GC.Collect();
@@ -425,7 +480,7 @@ namespace MediaPalyerPro
                 }
             }
         }
-        private void OnRenderFrameEventHandler(WPFSCPlayerPro player, SCFrame frame)
+        private void OnRenderVideoFrameEventHandler(WPFSCPlayerPro player)
         {
             CheckNetworkSyncStatus();
 
@@ -438,7 +493,7 @@ namespace MediaPalyerPro
                 playerLastTimer[player.Name] = currentTime;
             }
         }
-        private void OnFirstFrameRenderEventHandler(WPFSCPlayerPro player, SCFrame frame)
+        private void OnFirstFrameRenderEventHandler(WPFSCPlayerPro player)
         {
             if (Log.IsDebugEnabled)
                 Log.Debug($"WPFSCPlayerPro({player.Name}) First Frame Render Evnet. URL: {player.Url}");
@@ -477,10 +532,10 @@ namespace MediaPalyerPro
 #endregion
         private void UIElement_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
-            if (!this.IsLoaded) return;
-
             Type type = sender.GetType();
             WPFSCPlayerPro player = null;
+            FrameworkElement element = sender as FrameworkElement;
+            Log.Info($"{type.Name} ({element.Name})  IsVisibleChanged: {element.IsVisible} ({element.Visibility})");
 
             if (type == typeof(WPFSCPlayerPro))
             {
@@ -489,23 +544,23 @@ namespace MediaPalyerPro
             else if(type == typeof(Grid))
             {
                 Grid grid = (Grid)sender;
-                string name = grid.Name.Replace(CONTAINER, PLAYER);
-                player = this.FindName(name) as WPFSCPlayerPro;
+                string playerName = grid.Name.Replace(CONTAINER, PLAYER);
+                player = this.FindName(playerName) as WPFSCPlayerPro;
             }
 
             if (player != null)
             {
                 FrameworkElement parent = (FrameworkElement)player.Parent;
-                Log.Info($"WPFSCPlayerPro({player.Name})  IsVisibleChanged:{player.Visibility}  NewValue:{e.NewValue}");
-                if (player.Visibility != Visibility.Visible || parent.Visibility != Visibility.Visible)
+                if (parent.Visibility != Visibility.Visible || player.Visibility != Visibility.Visible)
                 {
                     player.Pause();
+                    player.SeekFastMilliSecond(0);
                 }
             }
 
-            CurrentPlayer = ForegroundPlayer.Visibility == Visibility.Visible ? ForegroundPlayer :
-                            CenterPlayer.Visibility == Visibility.Visible ? CenterPlayer :
-                            BackgroundPlayer.Visibility == Visibility.Visible ? BackgroundPlayer : null;
+            CurrentPlayer = ForegroundContainer.Visibility == Visibility && ForegroundPlayer.Visibility == Visibility.Visible ? ForegroundPlayer :
+                            CenterContainer.Visibility == Visibility && CenterPlayer.Visibility == Visibility.Visible ? CenterPlayer :
+                            BackgroundContainer.Visibility == Visibility && BackgroundPlayer.Visibility == Visibility.Visible ? BackgroundPlayer : null;
         }
         
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -551,7 +606,7 @@ namespace MediaPalyerPro
             }
         }
 
-        private void OnRenderAudioEvent(WPFSCPlayerPro player, IntPtr arg2, int arg3)
+        private void OnRenderAudioFrameEventHandler(WPFSCPlayerPro player)
         {
             this.Dispatcher.Invoke(() =>
             {

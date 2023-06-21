@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Xml.Linq;
 using SpaceCG.Extensions;
@@ -212,23 +213,54 @@ namespace MediaPalyerPro
         }
 
         /// <summary>
-        /// 替换 ImageBrush 节点 ImageSource 路径改为绝对路径
+        /// 检查更新元素，移除或是修改的属性的值，以保持格式的正确性
         /// </summary>
         /// <param name="rootElements"></param>
-        private static void ReplaceImageBrushSource(XElement rootElements)
+        private static void CheckAndUpdateElements(XElement rootElements)
         {
-            IEnumerable<XElement> imageBurshs = rootElements.Descendants("ImageBrush");
-            //IEnumerable<XElement> imageBurshs = from button in rootElements.Descendants("Button")
-            //                                    from imageBrush in button.Descendants("ImageBrush")
-            //                                    select imageBrush;
-
-            foreach (XElement imageBursh in imageBurshs)
+            foreach(XElement element in rootElements.Descendants())
             {
-                if (imageBursh == null) continue;
-                XAttribute imageSource = imageBursh.Attribute("ImageSource");
-                imageSource.Value = Path.Combine(Environment.CurrentDirectory, imageSource?.Value);
-            }
+                string localName = element.Name.LocalName;
 
+                //0.替换 ImageBrush 节点 ImageSource 路径改为绝对路径
+                if (localName == nameof(ImageBrush))
+                {
+                    XAttribute imageSource = element.Attribute("ImageSource");
+                    imageSource.Value = Path.Combine(Environment.CurrentDirectory, imageSource?.Value);
+                }
+                //1.移除显示对象不可访问的属性
+                else if (FrameworkElements.IndexOf(localName) != -1)
+                {
+                    foreach(string xname in DisableAttributes)
+                    {
+                        var attribute = element.Attribute(xname);
+                        if (attribute != null) attribute.Remove();
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 兼容性处理函数
+        /// </summary>
+        /// <param name="rootElements"></param>
+        [Obsolete("兼容性处理函数")]
+        private static void CompatibleProcess(XElement rootElements)
+        {
+            //key:oldElementNodeName, value:newElementNodeName
+            Dictionary<string, string> OldElementName = new Dictionary<string, string>();
+            OldElementName.Add("MiddleGroup", $"{CENTER}{CONTAINER}");
+            OldElementName.Add("MiddlePlayer", $"{CENTER}{PLAYER}");
+            OldElementName.Add("MiddleButtons", $"{CENTER}{BUTTONS}");
+            OldElementName.Add("ForegroundGroup", $"{FOREGROUND}{CONTAINER}");
+            OldElementName.Add("BackgroundGroup", $"{BACKGROUND}{CONTAINER}");
+
+            foreach(var element in rootElements.Descendants())
+            {
+                string localName = element.Name.LocalName;
+                if (!OldElementName.ContainsKey(localName)) continue;
+                element.Name = OldElementName[localName];
+            }
         }
     }
 }

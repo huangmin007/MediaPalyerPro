@@ -3,11 +3,11 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:MediaPalyerPro"
-        xmlns:sttplay="clr-namespace:Sttplay.MediaPlayer"
+        xmlns:local="clr-namespace:MediaPalyerPro" 
+        xmlns:sttplay="clr-namespace:Sttplay.MediaPlayer;assembly=Sttplay.MediaPlayer"
         mc:Ignorable="d"
         Height="720" Width="1280" Background="#00FFFFFF" 
-        Loaded="Window_Loaded" DragDrop.Drop="Window_Drop" >
+        Loaded="Window_Loaded" DragDrop.Drop="Window_Drop">
     <Window.Resources>
         <Style TargetType="Button">
             <Setter Property="Cursor" Value="Hand"/>
@@ -16,13 +16,13 @@
             <Setter Property="HorizontalAlignment" Value="Left"/>
             <Setter Property="VerticalAlignment" Value="Top"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Width" Value="100"/>
-            <Setter Property="Height" Value="50"/>
+            <Setter Property="Width" Value="120"/>
+            <Setter Property="Height" Value="60"/>
             <Setter Property="FontSize" Value="20"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="Background" Value="#640000FF"/>
             <Setter Property="Foreground" Value="#6400FF00"/>
-            <Setter Property="ToolTipService.IsEnabled" Value="False"/>
+            <Setter Property="ToolTipService.IsEnabled" Value="True"/>
             <EventSetter Event="Click" Handler="Button_Click"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -82,14 +82,13 @@
                     IsVisibleChanged="UIElement_IsVisibleChanged"
                      
                     onCaptureOpenCallbackEvent="OnCaptureOpenCallbackEvent"
-                    onRenderFrameEvent="OnRenderFrameEventHandler"
+                    onRenderVideoFrameEvent="OnRenderVideoFrameEventHandler"
                     onStreamFinishedEvent="OnStreamFinishedEventHandler"
                     onFirstFrameRenderEvent="OnFirstFrameRenderEventHandler"
-                    onStatusChangeEvent="OnStatusChangeEvent"
-                    onRenderAudioEvent="OnRenderAudioEvent"
+                    onRenderAudioFrameEvent="OnRenderAudioFrameEventHandler"
                     />
 
-                <Canvas x:Name="BackgroundButtons" ToolTipService.IsEnabled="False"></Canvas>
+                <Canvas x:Name="BackgroundButtons"></Canvas>
             </Grid>
 
             <!-- Center -->
@@ -100,13 +99,12 @@
                     IsVisibleChanged="UIElement_IsVisibleChanged"
                                         
                     onCaptureOpenCallbackEvent="OnCaptureOpenCallbackEvent"
-                    onRenderFrameEvent="OnRenderFrameEventHandler"
+                    onRenderVideoFrameEvent="OnRenderVideoFrameEventHandler"
                     onStreamFinishedEvent="OnStreamFinishedEventHandler"
                     onFirstFrameRenderEvent="OnFirstFrameRenderEventHandler"
-                    onStatusChangeEvent="OnStatusChangeEvent"
                     />
 
-                <Canvas x:Name="CenterButtons" ToolTipService.IsEnabled="False"></Canvas>
+                <Canvas x:Name="CenterButtons"></Canvas>
             </Grid>
 
             <!-- Foreground -->
@@ -117,13 +115,12 @@
                     IsVisibleChanged="UIElement_IsVisibleChanged"
                                         
                     onCaptureOpenCallbackEvent="OnCaptureOpenCallbackEvent"
-                    onRenderFrameEvent="OnRenderFrameEventHandler"
+                    onRenderVideoFrameEvent="OnRenderVideoFrameEventHandler"
                     onStreamFinishedEvent="OnStreamFinishedEventHandler"
                     onFirstFrameRenderEvent="OnFirstFrameRenderEventHandler"
-                    onStatusChangeEvent="OnStatusChangeEvent"
                     />
 
-                <Canvas x:Name="ForegroundButtons" ToolTipService.IsEnabled="False">
+                <Canvas x:Name="ForegroundButtons">
                     <!--Visibility="{Binding Visibility, ElementName=Player}"
                     <Button Name="Btn_00" Width="100" Height="100" FontSize="50" Margin="150,150">
                         <Button.Background>

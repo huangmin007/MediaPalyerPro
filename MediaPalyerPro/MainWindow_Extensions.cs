@@ -11,14 +11,23 @@ namespace MediaPalyerPro
     public partial class MainWindow : Window
     {
         /// <summary>
+        /// 设置列表循环
+        /// </summary>
+        /// <param name="loop"></param>
+        public void SetListLoop(bool loop)
+        {
+
+        }
+
+        /// <summary>
         /// 设置播放器音量, 0.0~1.0f
         /// </summary>
         /// <param name="volume"></param>
         public void SetVolume(float volume)
         {
-            CenterPlayer.SetVolume(volume);
-            BackgroundPlayer.SetVolume(volume);
-            ForegroundPlayer.SetVolume(volume);
+            //CenterPlayer.SetVolume(volume);
+            //BackgroundPlayer.SetVolume(volume);
+            //ForegroundPlayer.SetVolume(volume);
         }
 
         /// <summary>
@@ -26,18 +35,18 @@ namespace MediaPalyerPro
         /// </summary>
         public void VolumeUp()
         {
-            CenterPlayer.VolumeUp();
-            BackgroundPlayer.VolumeUp();
-            ForegroundPlayer.VolumeUp();
+            //CenterPlayer.VolumeUp();
+            //BackgroundPlayer.VolumeUp();
+            //ForegroundPlayer.VolumeUp();
         }
         /// <summary>
         /// 音量减小 10%
         /// </summary>
         public void VolumeDown()
         {
-            CenterPlayer.VolumeDown();
-            BackgroundPlayer.VolumeDown();
-            ForegroundPlayer.VolumeDown();
+            //CenterPlayer.VolumeDown();
+            //BackgroundPlayer.VolumeDown();
+            //ForegroundPlayer.VolumeDown();
         }
 
         /// <summary>
@@ -86,7 +95,7 @@ namespace MediaPalyerPro
                 LoadItem((XElement)CurrentItem.Parent.LastNode);
         }
         /// <summary>
-        /// 播放暂停
+        /// 播放暂停当前视频
         /// </summary>
         public void PlayPause()
         {
@@ -96,7 +105,7 @@ namespace MediaPalyerPro
         }
 
         /// <summary>
-        /// 播放视频
+        /// 播放当前视频
         /// </summary>
         public void Play()
         {
@@ -105,7 +114,7 @@ namespace MediaPalyerPro
         }
 
         /// <summary>
-        /// 暂停视频
+        /// 暂停当前视频
         /// </summary>
         public void Pause()
         {

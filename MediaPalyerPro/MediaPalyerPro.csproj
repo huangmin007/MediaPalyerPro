@@ -44,6 +44,9 @@
     <Reference Include="SpaceCG.Generic, Version=1.0.13.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\SpaceCG.Generic.1.0.13\lib\netstandard2.0\SpaceCG.Generic.dll</HintPath>
     </Reference>
+    <Reference Include="Sttplay.MediaPlayer, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\SCPlayerPro.3.2.0\lib\Sttplay.MediaPlayer.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Data" />
@@ -75,19 +78,6 @@
     <Compile Include="MainWindow_NetwordSync.cs" />
     <Compile Include="MainWindow_OnDragEnter.cs" />
     <Compile Include="MainWindow_Timer.cs" />
-    <Compile Include="SCPlayerPro\Dispatcher.cs" />
-    <Compile Include="SCPlayerPro\MiniThreadPool.cs" />
-    <Compile Include="SCPlayerPro\Renderer\IXRenderer.cs" />
-    <Compile Include="SCPlayerPro\Renderer\Renderer.cs" />
-    <Compile Include="SCPlayerPro\Renderer\RendererBitmap.cs" />
-    <Compile Include="SCPlayerPro\Renderer\RendererD3D9.cs" />
-    <Compile Include="SCPlayerPro\Renderer\RendererUtility.cs" />
-    <Compile Include="SCPlayerPro\Renderer\RendererX.cs" />
-    <Compile Include="SCPlayerPro\SCClock.cs" />
-    <Compile Include="SCPlayerPro\SCInterface.cs" />
-    <Compile Include="SCPlayerPro\SCMGR.cs" />
-    <Compile Include="SCPlayerPro\SCPlayerPro.cs" />
-    <Compile Include="SCPlayerPro\WPFSCPlayerPro.cs" />
     <Page Include="LoggerWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -147,21 +137,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Resource Include="27.ico" />
-    <Content Include="avcodec-58.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="avdevice-58.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="avfilter-7.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="avformat-58.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="avutil-56.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
     <Content Include="ICONS\上一页.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -193,30 +168,16 @@
     <Content Include="ICONS\退出.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="postproc-55.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="SCAudioPlayer.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="SCCore.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="SCUtility.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="swresample-3.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="swscale-5.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="XRenderer.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="SpaceCG\Extensions\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="..\packages\SCPlayerPro.3.2.0\build\SCPlayerPro.targets" Condition="Exists('..\packages\SCPlayerPro.3.2.0\build\SCPlayerPro.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>这台计算机上缺少此项目引用的 NuGet 程序包。使用“NuGet 程序包还原”可下载这些程序包。有关更多信息，请参见 http://go.microsoft.com/fwlink/?LinkID=322105。缺少的文件是 {0}。</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\SCPlayerPro.3.2.0\build\SCPlayerPro.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\SCPlayerPro.3.2.0\build\SCPlayerPro.targets'))" />
+  </Target>
 </Project>
