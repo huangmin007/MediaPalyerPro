@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
+using System.Xml.Linq;
 using Sttplay.MediaPlayer;
 
 namespace MediaPalyerPro
@@ -125,6 +126,25 @@ namespace MediaPalyerPro
                 player.Source = new BitmapImage(new Uri(filename, UriKind.RelativeOrAbsolute));
             else
                 Log.Error($"打开文件 {filename} 失败，不支持的文件类型");
+        }
+        /// <summary>
+        /// 替换 ImageBrush 节点 ImageSource 路径改为绝对路径
+        /// </summary>
+        /// <param name="rootElements"></param>
+        private static void ReplaceImageBrushSource(XElement rootElements)
+        {
+            IEnumerable<XElement> imageBurshs = rootElements.Descendants("ImageBrush");
+            //IEnumerable<XElement> imageBurshs = from button in rootElements.Descendants("Button")
+            //                                    from imageBrush in button.Descendants("ImageBrush")
+            //                                    select imageBrush;
+
+            foreach (XElement imageBursh in imageBurshs)
+            {
+                if (imageBursh == null) continue;
+                XAttribute imageSource = imageBursh.Attribute("ImageSource");
+                imageSource.Value = Path.Combine(Environment.CurrentDirectory, imageSource?.Value);
+            }
+
         }
         #endregion
     }

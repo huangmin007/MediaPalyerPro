@@ -211,8 +211,6 @@ namespace MediaPalyerPro
             System.IO.Ports.SerialPort SerialPort = InstanceExtensions.CreateSerialPort("SerialPort.PortName", null);
             if (SerialPort != null) AccessObjects.TryAdd("SerialPort", SerialPort);
 
-            ModbusDIO.WriteMultipleCoilsAsync(4, 0, new bool[] { true, true, true });
-
             //Create Instance
             HPSocket.IServer NetworkServer = InstanceExtensions.CreateNetworkServer("Network.Server", OnServerReceiveEventHandler);
             HPSocket.IClient NetworkClient = InstanceExtensions.CreateNetworkClient("Network.Client", OnClientReceiveEventHandler);
@@ -287,6 +285,7 @@ namespace MediaPalyerPro
                 XmlReader reader = XmlReader.Create(fileName, settings);
 
                 RootConfiguration = XElement.Load(reader, LoadOptions.None);
+                ReplaceImageBrushSource(RootConfiguration);
                 ReplaceTemplateElements(RootConfiguration, "Template", "RefTemplate", true);
             }
             catch (Exception ex)
@@ -394,32 +393,18 @@ namespace MediaPalyerPro
                         //Add
                         foreach (XElement btnElement in element.Elements("Button"))
                         {
-                            XElement btnElementClone = XElement.Parse(btnElement.ToString());
-#if true //改为相对路径
-                            var imageBurshs = from sub in btnElementClone.Elements()
-                                              where sub.Name.LocalName == "Button.Background" || sub.Name.LocalName == "Button.Foreground"
-                                              select sub.Element("ImageBrush");
-
-                            foreach (XElement imageBursh in imageBurshs)
+                            using (StringReader stringReader = new StringReader(btnElement.ToString()))
                             {
-                                if (imageBursh == null) continue;
-                                XAttribute imageSource = imageBursh?.Attribute("ImageSource");
-                                if (imageSource != null && imageSource.Value.Substring(1, 1) != ":")
-                                    imageSource.Value = $"{Environment.CurrentDirectory }/{imageSource.Value}";
+                                using (XmlReader xmlReader = XmlReader.Create(stringReader, settings, context))
+                                {
+                                    using (XamlXmlReader xamlXmlReader = new XamlXmlReader(xmlReader, xamlXmlReaderSettings))
+                                    {
+                                        Button button = (Button)System.Windows.Markup.XamlReader.Load(xamlXmlReader);
+                                        button.ToolTip = String.Format($"{id}.{PanelButtons.Name}.{button.Name}");
+                                        PanelButtons.Children.Add(button);
+                                    }
+                                }
                             }
-#endif
-                            StringReader stringReader = new StringReader(btnElementClone.ToString());
-                            XmlReader xmlReader = XmlReader.Create(stringReader, settings, context);
-                            XamlXmlReader xamlXmlReader = new XamlXmlReader(xmlReader, xamlXmlReaderSettings);
-                            Button button = (Button)System.Windows.Markup.XamlReader.Load(xamlXmlReader);
-                            button.ToolTip = String.Format($"{id}.{PanelButtons.Name}.{button.Name}");
-                            PanelButtons.Children.Add(button);
-
-                            //if(imageBurshs.Count() > 0)
-                            //{
-                                //Console.WriteLine(item);
-                            //}
-
                         }
                     }
 
