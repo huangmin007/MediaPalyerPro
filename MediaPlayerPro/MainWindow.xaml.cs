@@ -44,38 +44,29 @@ namespace MediaPlayerPro
         private MainWindow Window;
         private LoggerWindow LoggerWindow;
 
-        /// <summary>
-        /// 元素名称
-        /// </summary>
+        /// <summary> 元素名称 </summary>
         private static List<String> FrameworkElements = new List<String>();
-        /// <summary>
-        /// 元素禁用属性
-        /// </summary>
+        /// <summary> 元素禁用属性 </summary>
         private static List<String> DisableAttributes = new List<string>() { "Name", "Content" };
 
-
-        /// <summary>
-        /// 当前播放器
-        /// </summary>
+        /// <summary> 当前播放器 </summary>
         private WPFSCPlayerPro CurrentPlayer;
-        /// <summary>
-        /// 控制接口
-        /// </summary>
+        /// <summary> 控制接口 </summary>
         private ControlInterface ControlInterface;
+
+        XmlParserContext xmlParserContext;
+        XmlReaderSettings xmlReaderSettings;
+        XamlXmlReaderSettings xamlXmlReaderSettings;
 
         public MainWindow()
         {
             InitializeComponent();
             SetInstancePropertyValues(this, "Window.");
             this.Title = "Meida Player Pro v1.0.20230620";
-            this.Title = "Meida Player Pro " + (!String.IsNullOrWhiteSpace(this.Title) ? $"({this.Title})" : "");
+            //this.Title = "Meida Player Pro " + (!String.IsNullOrWhiteSpace(this.Title) ? $"({this.Title})" : "");
 
             LoggerWindow = new LoggerWindow();
             ProcessModule = CreateProcessModule("Process.FileName");
-
-#if DEBUG
-            this.Topmost = false;
-#endif
 
             this.RootContainer.Width = this.Width;
             this.RootContainer.Height = this.Height;
@@ -85,6 +76,7 @@ namespace MediaPlayerPro
                 child.Width = this.Width;
                 child.Height = this.Height;
 #if DEBUG
+                this.Topmost = false;
                 child.SetValue(ToolTipService.IsEnabledProperty, true);
 #else
                 child.SetValue(ToolTipService.IsEnabledProperty, false);
@@ -108,10 +100,6 @@ namespace MediaPlayerPro
             ControlInterface = new ControlInterface(2023);
             ControlInterface.AccessObjects.Add("Window", this);
         }
-
-        XmlParserContext xmlParserContext;
-        XmlReaderSettings xmlReaderSettings;
-        XamlXmlReaderSettings xamlXmlReaderSettings;
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
@@ -141,7 +129,6 @@ namespace MediaPlayerPro
             //读取并播放列表文件
             LoadConfig(MEDIA_CONFIG_FILE);
         }
-
 
         /// <summary>
         /// 加载配置文件
@@ -439,97 +426,14 @@ namespace MediaPlayerPro
         /// <summary>
         /// Call当前项或页面)的按扭事件
         /// </summary>
-        /// <param name="layerName"></param>
+        /// <param name="buttonsLayer"></param>
         /// <param name="buttonName"></param>
-        public void CallButtonEvent(string layerName, string buttonName)
+        public void CallButtonEvent(string buttonsLayer, string buttonName)
         {
             if (int.TryParse(CurrentItem.Attribute("ID")?.Value, out int id))
-                CallButtonEvent(id, layerName, buttonName);
+                CallButtonEvent(id, buttonsLayer, buttonName);
         }
 
-        #region Player Events Handler
-        //private double LastTime = 0.0f;
-        //private IEnumerable<XElement> onRenderEvents;
-
-        private Dictionary<String, double> playerLastTimer = new Dictionary<string, double>();
-        private Dictionary<String, IEnumerable<XElement>> playerRenderEvents = new Dictionary<string, IEnumerable<XElement>>();
-
-        private void OnCaptureOpenCallbackEvent(WPFSCPlayerPro player, CaptureOpenResult result, string message, OpenCallbackContext context)
-        {
-            if (Log.IsDebugEnabled)
-                Log.Debug($"WPFSCPlayerPro({player.Name}) On Capture Open Callback Event, Result: {result}  Message: {message}");
-
-            if (result != CaptureOpenResult.SUCCESS) return;
-
-            if (!playerLastTimer.ContainsKey(player.Name))
-                playerLastTimer.Add(player.Name, 0.0f);
-            if (!playerRenderEvents.ContainsKey(player.Name))
-                playerRenderEvents.Add(player.Name, null);
-
-            playerRenderEvents[player.Name] = null;
-            if (CurrentItem?.Element(player.Name) != null)
-            {
-                IEnumerable<XElement> events = CurrentItem.Element(player.Name)?.Elements("Events");
-                if (events.Count() > 0)
-                {
-                    playerRenderEvents[player.Name] = from ev in events
-                                                      where ev.Attribute("Name")?.Value == "OnRenderFrame"
-                                                      select ev;
-                    if (playerRenderEvents[player.Name].Count() == 0) playerRenderEvents[player.Name] = null;
-                    //Console.WriteLine("COUNT>>>>>>>>");
-                }
-            }
-        }
-        private void OnRenderVideoFrameEventHandler(WPFSCPlayerPro player)
-        {
-            CheckNetworkSyncStatus();
-
-            if (playerRenderEvents[player.Name] != null)
-            {
-                double currentTime = Math.Round(player.CurrentTime / 1000.0f, 2);
-                if (playerLastTimer[player.Name] == currentTime) return;
-
-                CallPlayerEvent(player, "OnRenderFrame", currentTime, playerLastTimer[player.Name]);
-                playerLastTimer[player.Name] = currentTime;
-            }
-        }
-        private void OnFirstFrameRenderEventHandler(WPFSCPlayerPro player)
-        {
-            if (Log.IsDebugEnabled)
-                Log.Debug($"WPFSCPlayerPro({player.Name}) First Frame Render Evnet. URL: {player.Url}");
-
-            //if (NetworkSlave != null)  //4字节心跳
-            //    NetworkSlave.Send(SyncMessage, SyncMessage.Length - 4, 4);
-
-            CallPlayerEvent(player, "OnFirstFrame");
-            playerLastTimer[player.Name] = Math.Round(player.CurrentTime / 1000.0f, 2);
-        }
-        private void OnStreamFinishedEventHandler(WPFSCPlayerPro player)
-        {
-            if (Log.IsDebugEnabled)
-                Log.Debug($"WPFSCPlayerPro({player.Name}) Stream Finish Event. URL: {player.Url}  ListAutoLoop: {ListAutoLoop}");
-
-            //if (NetworkSlave != null)  //4字节心跳
-            //    NetworkSlave.Send(SyncMessage, SyncMessage.Length - 4, 4);
-
-            CallPlayerEvent(player, "OnLastFrame");
-
-            if (ListAutoLoop)
-            {
-                if (CurrentItem.NextNode != null)
-                    LoadItem((XElement)CurrentItem.NextNode);
-                else
-                    LoadItem((XElement)CurrentItem.Parent.FirstNode);
-            }
-        }
-        private void OnStatusChangeEvent(WPFSCPlayerPro player)
-        {
-            if (Log.IsDebugEnabled)
-                Log.Debug($"WPFSCPlayerPro({player.Name}) Status Chagned Evnet. IsPaused: {player.IsPaused}");
-
-            CheckNetworkSyncStatus();
-        }
-        #endregion
         private void UIElement_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
             Type type = sender.GetType();
@@ -590,36 +494,6 @@ namespace MediaPlayerPro
                 player.Play();
             else
                 player.Pause();
-        }
-
-
-        /// <summary>
-        /// 打印 Player 属性信息
-        /// </summary>
-        public void PlayerVideoInfo()
-        {
-            Type type = ForegroundPlayer.GetType();
-            PropertyInfo[] properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
-            foreach (PropertyInfo property in properties)
-            {
-                Log.Info($"{property.Name}: {property.GetValue(ForegroundPlayer)}");
-            }
-        }
-
-        private void OnRenderAudioFrameEventHandler(WPFSCPlayerPro player)
-        {
-            this.Dispatcher.Invoke(() =>
-            {
-                if (playerRenderEvents[player.Name] != null)
-                {
-                    double currentTime = Math.Round(player.CurrentTime / 1000.0f, 2);
-                    if (playerLastTimer[player.Name] == currentTime) return;
-
-                    CallPlayerEvent(player, "OnRenderFrame", currentTime, playerLastTimer[player.Name]);
-                    playerLastTimer[player.Name] = currentTime;
-                }
-            });
-
         }
 
     }

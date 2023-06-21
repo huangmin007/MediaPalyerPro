@@ -88,6 +88,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="MainWindow_PlayerEvents.cs" />
     <Compile Include="MainWindow_Timer.cs.cs" />
     <Compile Include="MainWindow_Override.cs" />
     <Compile Include="MainWindow_OnDragEnter.cs" />

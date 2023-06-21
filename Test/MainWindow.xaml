@@ -3,12 +3,15 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:Test"
+        xmlns:local="clr-namespace:Test" xmlns:sttplay="clr-namespace:Sttplay.MediaPlayer;assembly=Sttplay.MediaPlayer"
         mc:Ignorable="d" Name="_window"
         Title="MainWindow" Height="450" Width="800" Loaded="Window_Loaded">
     <Viewbox Stretch="Uniform" ClipToBounds="True" Focusable="False">
         <Grid Name="RootGroup" Focusable="False">
             <Grid>
+                <sttplay:WPFSCPlayerPro x:Name="BackgroundPlayer"
+                    OpenMode="Link" AutoOpen="True" OpenAndPlay="True" Loop="True" Volume="0.8"
+                    />
                 <Canvas Width="{Binding Width, ElementName=_window}" Height="{Binding Height, ElementName=_window}">
                     <Button Content="Hello" Width="100" Height="40" Canvas.Left="626" Canvas.Top="243"/>
                 </Canvas>

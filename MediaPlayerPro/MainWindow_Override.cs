@@ -42,7 +42,7 @@ namespace MediaPlayerPro
 
             DisposeProcessModule(ref ProcessModule);
         }
-
+        /// <inheritdoc/>
         protected override void OnClosed(EventArgs e)
         {
             base.OnClosed(e);

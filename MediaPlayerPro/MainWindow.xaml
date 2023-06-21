@@ -75,7 +75,7 @@
 
         <Grid Name="RootContainer" Focusable="False" Width="1280" Height="720" >
             <!-- Background -->
-            <Grid x:Name="BackgroundContainer" Visibility="Visible" Background="Black" IsVisibleChanged="UIElement_IsVisibleChanged">
+            <Grid x:Name="BackgroundContainer" Visibility="Visible" Background="#FF000000" IsVisibleChanged="UIElement_IsVisibleChanged">
                 <sttplay:WPFSCPlayerPro x:Name="BackgroundPlayer"
                     OpenMode="Link" AutoOpen="True" OpenAndPlay="True" Loop="True" Volume="0.8"
                     
@@ -92,7 +92,7 @@
             </Grid>
 
             <!-- Center -->
-            <Grid x:Name="CenterContainer" Visibility="Hidden" Background="Black" IsVisibleChanged="UIElement_IsVisibleChanged">
+            <Grid x:Name="CenterContainer" Visibility="Hidden" Background="#FF000000" IsVisibleChanged="UIElement_IsVisibleChanged">
                 <sttplay:WPFSCPlayerPro x:Name="CenterPlayer"
                     OpenMode="Link" AutoOpen="True" OpenAndPlay="True" Loop="True" Volume="0.8"
                                         
@@ -108,7 +108,7 @@
             </Grid>
 
             <!-- Foreground -->
-            <Grid x:Name="ForegroundContainer" Visibility="Hidden" Background="Black" IsVisibleChanged="UIElement_IsVisibleChanged">
+            <Grid x:Name="ForegroundContainer" Visibility="Hidden" Background="#FF000000" IsVisibleChanged="UIElement_IsVisibleChanged">
                 <sttplay:WPFSCPlayerPro x:Name="ForegroundPlayer" 
                     OpenMode="Link" AutoOpen="True" OpenAndPlay="True" Loop="True" Volume="0.8"  
                                         
