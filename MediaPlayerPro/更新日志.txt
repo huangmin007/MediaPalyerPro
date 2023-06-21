@@ -1,0 +1,13 @@
+
+2023-02-25
+1.跨屏同步功能，对主机增加了视频的播放、暂停状态同步至从机
+2.可自定义播放器标题
+
+2023-02-20
+1.更新了所有展点的主程序 MediaPalyerPro.exe, 添加了5个功能函数:
+	NextItem(),PrevItem(), 播放当前 ID 的上下项
+	NextNode(),PrevNode(), 播放当前 配置节点 的上下项
+	PlayPause(),播放或暂停视频
+2.增加鼠标点击视频，播放或暂停；如需取消应该功能，可设置属性 Player.IsEnabled="False", 该功能不可鼠标交互
+3.Button.ImageBrush.Source 添加支持相对路径目录
+
