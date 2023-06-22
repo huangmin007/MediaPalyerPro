@@ -4,6 +4,8 @@ using System;
 using System.Configuration;
 using System.IO.Ports;
 using System.Net.Sockets;
+using MediaPalyerPro.SpaceCG;
+using Modbus.Device;
 
 namespace SpaceCG.Generic
 {

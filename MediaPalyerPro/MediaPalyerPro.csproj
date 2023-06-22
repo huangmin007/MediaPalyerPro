@@ -8,7 +8,7 @@
     <OutputType>WinExe</OutputType>
     <RootNamespace>MediaPalyerPro</RootNamespace>
     <AssemblyName>MediaPalyerPro</AssemblyName>
-    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <WarningLevel>4</WarningLevel>
@@ -76,19 +76,6 @@
     <Compile Include="MainWindow_NetwordSync.cs" />
     <Compile Include="MainWindow_OnDragEnter.cs" />
     <Compile Include="MainWindow_Timer.cs" />
-    <Compile Include="SCPlayerPro\Dispatcher.cs" />
-    <Compile Include="SCPlayerPro\MiniThreadPool.cs" />
-    <Compile Include="SCPlayerPro\Renderer\IXRenderer.cs" />
-    <Compile Include="SCPlayerPro\Renderer\Renderer.cs" />
-    <Compile Include="SCPlayerPro\Renderer\RendererBitmap.cs" />
-    <Compile Include="SCPlayerPro\Renderer\RendererD3D9.cs" />
-    <Compile Include="SCPlayerPro\Renderer\RendererUtility.cs" />
-    <Compile Include="SCPlayerPro\Renderer\RendererX.cs" />
-    <Compile Include="SCPlayerPro\SCClock.cs" />
-    <Compile Include="SCPlayerPro\SCInterface.cs" />
-    <Compile Include="SCPlayerPro\SCMGR.cs" />
-    <Compile Include="SCPlayerPro\SCPlayerPro.cs" />
-    <Compile Include="SCPlayerPro\WPFSCPlayerPro.cs" />
     <Compile Include="SpaceCG\Controls\ListBoxAppender.cs" />
     <Compile Include="SpaceCG\Controls\LoggerWindow.cs" />
     <Compile Include="SpaceCG\Controls\TextBoxAppender.cs" />
@@ -100,6 +87,7 @@
     <Compile Include="SpaceCG\Generic\SerialPortExtension.cs" />
     <Compile Include="SpaceCG\Generic\StringExtension.cs" />
     <Compile Include="SpaceCG\Module\ModbusDeviceManager.cs" />
+    <Compile Include="SpaceCG\TCPClientAdapter.cs" />
     <Compile Include="SpaceCG\WindowsAPI\API_Template.cs" />
     <Compile Include="SpaceCG\WindowsAPI\User32\DeviceNotification.cs" />
     <Compile Include="SpaceCG\WindowsAPI\User32\DeviceNotificationExample.cs" />
@@ -120,6 +108,18 @@
     <Compile Include="SpaceCG\WindowsAPI\User32\WindowMessageType.cs" />
     <Compile Include="SpaceCG\WindowsAPI\User32\WindowRect.cs" />
     <Compile Include="SpaceCG\WindowsAPI\WinDef.cs" />
+    <Compile Include="STTPlayer\Renderer\IXRenderer.cs" />
+    <Compile Include="STTPlayer\Renderer\Renderer.cs" />
+    <Compile Include="STTPlayer\Renderer\RendererBitmap.cs" />
+    <Compile Include="STTPlayer\Renderer\RendererD3D9.cs" />
+    <Compile Include="STTPlayer\Renderer\RendererUtility.cs" />
+    <Compile Include="STTPlayer\Renderer\RendererX.cs" />
+    <Compile Include="STTPlayer\SCAudioPlayer.cs" />
+    <Compile Include="STTPlayer\SCClock.cs" />
+    <Compile Include="STTPlayer\SCInterface.cs" />
+    <Compile Include="STTPlayer\SCMGR.cs" />
+    <Compile Include="STTPlayer\SCPlayerPro.cs" />
+    <Compile Include="STTPlayer\WPFSCPlayerPro.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -154,6 +154,9 @@
     <None Include="Log4Net.Config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="MediaContents.Config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="MediaContents.Page.Config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -162,7 +165,7 @@
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
-    <None Include="MediaContents.Config">
+    <None Include="MediaContents.Back.Config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="SpaceCG\WindowsAPI\README.md" />
@@ -175,25 +178,16 @@
     <None Include="App.Config" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="sccore.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="XRenderer.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="更新日志.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Resource Include="27.ico" />
-    <Content Include="avcodec-58.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="avdevice-58.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="avfilter-7.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="avformat-58.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="avutil-56.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
     <Content Include="HPSocket4C.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -228,27 +222,6 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="ICONS\退出.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="postproc-55.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="SCAudioPlayer.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="SCCore.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="SCUtility.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="swresample-3.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="swscale-5.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="XRenderer.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

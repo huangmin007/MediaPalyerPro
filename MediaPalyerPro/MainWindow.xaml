@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:MediaPalyerPro"
+        xmlns:local="clr-namespace:MediaPalyerPro" 
         xmlns:sttplay="clr-namespace:Sttplay.MediaPlayer"
         mc:Ignorable="d"
         Height="720" Width="1280" Background="#00FFFFFF" 
@@ -74,6 +74,7 @@
     <Viewbox Name="ViewboxContainer" Stretch="Uniform" ClipToBounds="True" Focusable="False">
 
         <Grid Name="RootContainer" Focusable="False" Width="1280" Height="720" >
+            
             <!-- BackgroundGroup -->
             <Grid x:Name="BackgroundContainer" Visibility="Visible" Background="Black" IsVisibleChanged="UIElement_IsVisibleChanged">
                 <sttplay:WPFSCPlayerPro x:Name="BackgroundPlayer"
@@ -82,11 +83,10 @@
                     IsVisibleChanged="UIElement_IsVisibleChanged"
                                         
                     onCaptureOpenCallbackEvent="OnCaptureOpenCallbackEvent"
-                    onRenderFrameEvent="OnRenderFrameEventHandler"
+                    onRenderVideoFrameEvent="OnRenderFrameEventHandler"
                     onStreamFinishedEvent="OnStreamFinishedEventHandler"
                     onFirstFrameRenderEvent="OnFirstFrameRenderEventHandler"
-                    onStatusChangeEvent="OnStatusChangeEvent"
-                    onRenderAudioEvent="OnRenderAudioEvent"
+                    onRenderAudioFrameEvent="OnRenderAudioEvent"
                     />
 
                 <Canvas x:Name="BackgroundButtons" ToolTipService.IsEnabled="False"></Canvas>
@@ -100,10 +100,9 @@
                     IsVisibleChanged="UIElement_IsVisibleChanged"
                                         
                     onCaptureOpenCallbackEvent="OnCaptureOpenCallbackEvent"
-                    onRenderFrameEvent="OnRenderFrameEventHandler"
+                    onRenderVideoFrameEvent="OnRenderFrameEventHandler"
                     onStreamFinishedEvent="OnStreamFinishedEventHandler"
                     onFirstFrameRenderEvent="OnFirstFrameRenderEventHandler"
-                    onStatusChangeEvent="OnStatusChangeEvent"
                     />
 
                 <Canvas x:Name="MiddleButtons" ToolTipService.IsEnabled="False"></Canvas>
@@ -117,10 +116,9 @@
                     IsVisibleChanged="UIElement_IsVisibleChanged"
                                         
                     onCaptureOpenCallbackEvent="OnCaptureOpenCallbackEvent"
-                    onRenderFrameEvent="OnRenderFrameEventHandler"
+                    onRenderVideoFrameEvent="OnRenderFrameEventHandler"
                     onStreamFinishedEvent="OnStreamFinishedEventHandler"
                     onFirstFrameRenderEvent="OnFirstFrameRenderEventHandler"
-                    onStatusChangeEvent="OnStatusChangeEvent"
                     />
 
                 <Canvas x:Name="ForegroundButtons" ToolTipService.IsEnabled="False">

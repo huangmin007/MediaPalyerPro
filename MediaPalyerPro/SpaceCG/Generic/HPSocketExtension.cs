@@ -53,6 +53,59 @@ namespace SpaceCG.Generic
         public static bool SendMessage(this HPSocket.Tcp.TcpClient client, string message) => SendBytes(client, Encoding.UTF8.GetBytes(message));
         public static bool SendMessage(this HPSocket.Udp.UdpClient client, string message) => SendBytes(client, Encoding.UTF8.GetBytes(message));
 
+        public static void WriteMultipleCoils(this HPSocket.Tcp.TcpClient client, byte slaveAddress, ushort startAddress, bool[] data) => WriteMultipleCoilsAsync(client, slaveAddress, startAddress, data);
+        public static void WriteMultipleCoilsAsync(this HPSocket.Tcp.TcpClient client, byte slaveAddress, ushort startAddress, bool[] data)
+        {
+            if (client?.IsConnected == false || data?.Length == 0) return;
+            ushort length = (ushort)data.Length;
+            byte size = (byte)Math.Ceiling(data.Length / 8.0f);
+            if(size > 1)
+            {
+                Logger.Warn($"暂时只支持 8 位数据");
+            }
+            byte value = 0x00;
+            for(int i = 0; i < length;i ++)
+            {
+                value |= (data[i]) ? (byte)(1 << i) : (byte)(0 << i);
+            }
+
+            byte[] bytes = new byte[] {slaveAddress, 0x0F, (byte)(startAddress >> 8), (byte)(startAddress & 0xFF), (byte)(length >> 8), (byte)(length & 0xFF), size, value};
+            byte[] crc = CRC16(bytes);
+            byte[] buffer = new byte[bytes.Length + crc.Length];
+
+            Array.Copy(bytes, 0, buffer, 0, bytes.Length);
+            buffer[buffer.Length - 2] = crc[0];
+            buffer[buffer.Length - 1] = crc[1];
+
+            client.Send(buffer, buffer.Length);
+        }
+        /// <summary>
+        /// https://blog.csdn.net/b07lxh/article/details/125015033
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        private static byte[] CRC16(byte[] data)
+        {
+            int len = data.Length;
+            if (len > 0)
+            {
+                ushort crc = 0xFFFF;
+
+                for (int i = 0; i < len; i++)
+                {
+                    crc = (ushort)(crc ^ (data[i]));
+                    for (int j = 0; j < 8; j++)
+                    {
+                        crc = (crc & 1) != 0 ? (ushort)((crc >> 1) ^ 0xA001) : (ushort)(crc >> 1);
+                    }
+                }
+                byte hi = (byte)((crc & 0xFF00) >> 8);  //高位置
+                byte lo = (byte)(crc & 0x00FF);         //低位置
+
+                return new byte[] { lo, hi };
+            }
+            return new byte[] { 0, 0 };
+        }
         #endregion
 
         /// <summary>
@@ -245,7 +298,7 @@ namespace SpaceCG.Generic
 
                 Task.Run(() =>
                 {
-                    System.Threading.Thread.Sleep(1000);
+                    System.Threading.Thread.Sleep(2000);
                     try
                     {
                         client?.Connect();
@@ -259,7 +312,7 @@ namespace SpaceCG.Generic
                 client.GetRemoteHost(out string rHost, out ushort rPort);
                 client.GetListenAddress(out string lHost, out ushort lPort);
                 Logger.Info($"客户端({connType}) {lHost}:{lPort} 已连接远程服务 {rHost}:{rPort} ");
-
+                
                 return HPSocket.HandleResult.Ok;
             };
             client.OnReceive += (HPSocket.IClient sender, byte[] data) =>

@@ -16,9 +16,15 @@ namespace MediaPalyerPro
         /// <param name="volume"></param>
         public void SetVolume(float volume)
         {
+#if false
             MiddlePlayer.SetVolume(volume);
             BackgroundPlayer.SetVolume(volume);
             ForegroundPlayer.SetVolume(volume);
+#else
+            MiddlePlayer.Volume = volume;
+            BackgroundPlayer.Volume = volume;
+            ForegroundPlayer.Volume = volume;
+#endif
         }
 
         /// <summary>
@@ -26,18 +32,36 @@ namespace MediaPalyerPro
         /// </summary>
         public void VolumeUp()
         {
+#if false
             MiddlePlayer.VolumeUp();
             BackgroundPlayer.VolumeUp();
             ForegroundPlayer.VolumeUp();
+#else
+            float volume = BackgroundPlayer.Volume;
+            volume = (float)(volume + 0.1f >= 1.0f ? 1.0 : volume + 0.1f);
+
+            MiddlePlayer.Volume = volume;
+            BackgroundPlayer.Volume = volume;
+            ForegroundPlayer.Volume = volume;
+#endif
         }
         /// <summary>
         /// 音量减小 10%
         /// </summary>
         public void VolumeDown()
         {
+#if false
             MiddlePlayer.VolumeDown();
             BackgroundPlayer.VolumeDown();
             ForegroundPlayer.VolumeDown();
+#else
+            float volume = BackgroundPlayer.Volume;
+            volume = (float)(volume + 0.1f >= 1.0f ? 1.0 : volume + 0.1f);
+
+            MiddlePlayer.Volume = volume;
+            BackgroundPlayer.Volume = volume;
+            ForegroundPlayer.Volume = volume;
+#endif
         }
 
         /// <summary>

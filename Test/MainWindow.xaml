@@ -10,7 +10,9 @@
         <Grid Name="RootGroup" Focusable="False">
             <Grid>
                 <Canvas Width="{Binding Width, ElementName=_window}" Height="{Binding Height, ElementName=_window}">
-                    <Button Content="Hello" Width="100" Height="40" Canvas.Left="626" Canvas.Top="243"/>
+                    <Button Name="Button_Close" Content="Close" Width="100" Height="40" Canvas.Left="626" Canvas.Top="243" Click="Button_Click"/>
+                    <Button Name="Button_Connect" Content="Connect" Width="100" Height="40" Canvas.Left="400" Canvas.Top="243" Click="Button_Click"/>
+                    <Button Name="Button_Write" Content="Write" Width="100" Height="40" Canvas.Left="300" Canvas.Top="243" Click="Button_Click"/>
                 </Canvas>
             </Grid>
         </Grid>

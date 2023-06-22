@@ -19,6 +19,11 @@ using HPSocket;
 using SpaceCG.Generic;
 using SpaceCG.Log4Net.Controls;
 using System.Windows.Media;
+using System.Threading;
+using Modbus.Device;
+using System.Configuration;
+using System.Net.Sockets;
+using MediaPalyerPro.SpaceCG;
 
 namespace MediaPalyerPro
 {
@@ -48,6 +53,15 @@ namespace MediaPalyerPro
         private Grid MiddleGroup;
         private Grid ForegroundGroup;
         private Grid BackgroundGroup;
+
+        int port;
+        string address;
+        TcpClient ModbusTcpClient;
+
+        /// <summary>
+        /// 当前线程同步上下文
+        /// </summary>
+        private SynchronizationContext SyncContext = SynchronizationContext.Current;
 
         /// <summary>
         /// 当前播放器
@@ -205,9 +219,33 @@ namespace MediaPalyerPro
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
+#if false
+            try
+            {
+                if (!String.IsNullOrWhiteSpace(ConfigurationManager.AppSettings["Modbus.Master"]))
+                {
+                    string[] args = ConfigurationManager.AppSettings["Modbus.Master"].Split(',');
+                    if (args.Length >= 3 && ushort.TryParse(args[2], out ushort port))
+                    {
+                        Modbus.Device.IModbusMaster ModbusDIO = ModbusSerialMaster.CreateRtu(new TCPClientAdapter(args[1], port));
+                        if (ModbusDIO != null) AccessObjects.TryAdd("Modbus.Master", ModbusDIO);
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+                Log.Error(ex);
+            }
+#else
+#if false
             //Create Instance
-            Modbus.Device.IModbusMaster ModbusDIO = InstanceExtensions.CreateNModbus4Master("Modbus.Master");
-            if (ModbusDIO != null) AccessObjects.TryAdd("Modbus.Master", ModbusDIO);
+            //Modbus.Device.IModbusMaster ModbusDIO = InstanceExtensions.CreateNModbus4Master("Modbus.Master");
+            //if (ModbusDIO != null) AccessObjects.TryAdd("Modbus.Master", ModbusDIO);
+#else
+            HPSocket.IClient ModbusClient = InstanceExtensions.CreateNetworkClient("Modbus.Master", OnModbusClientReceiveEventHandler);
+            if (ModbusClient != null) AccessObjects.TryAdd("Modbus.Master", ModbusClient);
+#endif
+#endif
             System.IO.Ports.SerialPort SerialPort = InstanceExtensions.CreateSerialPort("SerialPort.PortName", null);
             if (SerialPort != null) AccessObjects.TryAdd("SerialPort", SerialPort);
 
@@ -220,10 +258,31 @@ namespace MediaPalyerPro
             InitializeTimer();
             CreateNetworkSyncObject();
 
+            xmlReaderSettings = new XmlReaderSettings { NameTable = new NameTable() };
+            XmlNamespaceManager xmlns = new XmlNamespaceManager(xmlReaderSettings.NameTable);
+            xmlns.AddNamespace("", "http://schemas.microsoft.com/winfx/2006/xaml/presentation");
+            xmlns.AddNamespace("x", "http://schemas.microsoft.com/winfx/2006/xaml");
+            xmlns.AddNamespace("d", "http://schemas.microsoft.com/expression/blend/2008");
+            xmlns.AddNamespace("mc", "http://schemas.openxmlformats.org/markup-compatibility/2006");
+            xmlns.AddNamespace("local", "clr-namespace:MediaPalyerPro");
+            xmlParserContext = new XmlParserContext(null, xmlns, "", XmlSpace.Preserve);
+            xamlXmlReaderSettings = new XamlXmlReaderSettings();
+            xamlXmlReaderSettings.LocalAssembly = System.Reflection.Assembly.GetExecutingAssembly();
+
             //读取并播放列表文件
             LoadConfig(MEDIA_CONFIG_FILE);
         }
+        private HandleResult OnModbusClientReceiveEventHandler(IClient sender, byte[] data)
+        {
+            string hex = "";
+            foreach (var b in data) hex += string.Format("{0:X2} ", b);
+            Log.Info($"Modbus Client Receive Data({data.Length}): {hex}");
+            //Log.Info($"Modbus Client Receive Data {data.Length} Bytes");
 
+            TimerReset();
+
+            return HandleResult.Ok;
+        }
         private HandleResult OnClientReceiveEventHandler(IClient sender, byte[] data)
         {
             String message = Encoding.UTF8.GetString(data);
@@ -329,6 +388,11 @@ namespace MediaPalyerPro
             Log.Info($"Ready Load Item ID: {id}");
             LoadItem(items.First());
         }
+
+        XmlReaderSettings xmlReaderSettings;
+        XmlParserContext xmlParserContext;
+        XamlXmlReaderSettings xamlXmlReaderSettings;
+
         /// <summary>
         /// 播放列表项,,https://www.codenong.com/54797577/
         /// </summary>
@@ -339,24 +403,9 @@ namespace MediaPalyerPro
 
             CurrentItem = item;
 
-            //StringReader stringReader = new StringReader("");
-            XmlReaderSettings settings = new XmlReaderSettings { NameTable = new NameTable() };
-            XmlNamespaceManager xmlns = new XmlNamespaceManager(settings.NameTable);
-            xmlns.AddNamespace("", "http://schemas.microsoft.com/winfx/2006/xaml/presentation");
-            xmlns.AddNamespace("x", "http://schemas.microsoft.com/winfx/2006/xaml");
-            xmlns.AddNamespace("d", "http://schemas.microsoft.com/expression/blend/2008");
-            xmlns.AddNamespace("mc", "http://schemas.openxmlformats.org/markup-compatibility/2006");
-            xmlns.AddNamespace("local", "clr-namespace:MediaPalyerPro");
-            XmlParserContext context = new XmlParserContext(null, xmlns, "", XmlSpace.Preserve);
-            //XmlReader xmlReader = XmlReader.Create(stringReader, settings, context);
-            XamlXmlReaderSettings xamlXmlReaderSettings = new XamlXmlReaderSettings();
-            xamlXmlReaderSettings.LocalAssembly = System.Reflection.Assembly.GetExecutingAssembly();
-            //XamlXmlReader xamlXmlReader = new XamlXmlReader(xmlReader, xamlXmlReaderSettings);
-            //UIElement element = (UIElement)System.Windows.Markup.XamlReader.Load(xamlXmlReader);
-
-            MiddlePlayer.Pause();
-            ForegroundPlayer.Pause();
-            BackgroundPlayer.Pause();
+            if (IsVideoFile(MiddlePlayer.Url)) MiddlePlayer.Pause();
+            if (IsVideoFile(ForegroundPlayer.Url)) ForegroundPlayer.Pause();
+            if (IsVideoFile(BackgroundPlayer.Url)) BackgroundPlayer.Pause();
 
             String id = CurrentItem.Attribute("ID")?.Value;
 
@@ -375,8 +424,8 @@ namespace MediaPalyerPro
                     if (uiElement?.GetType() == typeof(WPFSCPlayerPro))
                     {
                         WPFSCPlayerPro WPFPlayer = (WPFSCPlayerPro)uiElement;
+                        if (IsVideoFile(WPFPlayer.Url)) WPFPlayer.Close();
                         WPFPlayer.Source = null;
-                        WPFPlayer.Close();
                     }
 
                     //FrameworkElement Property
@@ -395,7 +444,7 @@ namespace MediaPalyerPro
                         {
                             using (StringReader stringReader = new StringReader(btnElement.ToString()))
                             {
-                                using (XmlReader xmlReader = XmlReader.Create(stringReader, settings, context))
+                                using (XmlReader xmlReader = XmlReader.Create(stringReader, xmlReaderSettings, xmlParserContext))
                                 {
                                     using (XamlXmlReader xamlXmlReader = new XamlXmlReader(xmlReader, xamlXmlReaderSettings))
                                     {
@@ -595,7 +644,6 @@ namespace MediaPalyerPro
                 //Property
                 else if (!String.IsNullOrWhiteSpace(action.Attribute("Property")?.Value) && !String.IsNullOrWhiteSpace(action.Attribute("Value")?.Value))
                 {
-
                     Task.Run(() =>
                     {
                         this.Dispatcher.Invoke(() =>
@@ -616,6 +664,79 @@ namespace MediaPalyerPro
             }
         }
 
+        protected void CallActionElement2(XElement action)
+        {
+            if (action?.Name?.LocalName != "Action") return;
+
+            Object target = null;
+            if (action.Attribute("TargetObj") != null)
+                target = InstanceExtensions.GetInstanceFieldObject(this, action?.Attribute("TargetObj")?.Value);
+            else if (action.Attribute("TargetKey") != null)
+                target = AccessObjects.TryGetValue(action?.Attribute("TargetKey")?.Value, out IDisposable obj) ? obj : null;
+            if (target == null)
+            {
+                Log.Warn($"未找到配置的目标对象：{action}");
+                return;
+            }
+
+            Log.Info($"准备执行目标对象配置: {action} ");
+
+            try
+            {
+                //Method
+                if (!String.IsNullOrWhiteSpace(action.Attribute("Method")?.Value))
+                {
+                    if (action.Attribute("Method").Value == "Sleep")
+                    {
+                        InstanceExtensions.CallInstanceMethod(target, action.Attribute("Method").Value, StringExtension.ConvertParameters(action.Attribute("Params").Value));
+                        return;
+                    }
+                    if (SyncContext != null)
+                    {
+                        SyncContext.Send((o) =>
+                        {
+                            if (!String.IsNullOrWhiteSpace(action.Attribute("Params")?.Value))
+                                InstanceExtensions.CallInstanceMethod(target, action.Attribute("Method").Value, StringExtension.ConvertParameters(action.Attribute("Params").Value));
+                            else
+                                InstanceExtensions.CallInstanceMethod(target, action.Attribute("Method").Value);
+                        }, null);
+                    }
+                    /*
+                    Task.Run(() =>
+                    {
+                        
+                        this.Dispatcher.Invoke(() =>
+                        {
+                            if (!String.IsNullOrWhiteSpace(action.Attribute("Params")?.Value))
+                                InstanceExtensions.CallInstanceMethod(target, action.Attribute("Method").Value, StringExtension.ConvertParameters(action.Attribute("Params").Value));
+                            else
+                                InstanceExtensions.CallInstanceMethod(target, action.Attribute("Method").Value);
+                        });
+                        
+                    });*/
+                }
+                //Property
+                else if (!String.IsNullOrWhiteSpace(action.Attribute("Property")?.Value) && !String.IsNullOrWhiteSpace(action.Attribute("Value")?.Value))
+                {
+                    Task.Run(() =>
+                    {
+                        this.Dispatcher.Invoke(() =>
+                        {
+                            InstanceExtensions.ChangeInstancePropertyValue(target, action.Attribute("Property").Value, action.Attribute("Value").Value);
+                        });
+                    });
+                }
+                //Other
+                else
+                {
+                    Log.Error($"配置格式错误：{action}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"执行目标对象配置错误：{ex}");
+            }
+        }
 
         #region Player Events Handler
         //private double LastTime = 0.0f;
@@ -650,7 +771,7 @@ namespace MediaPalyerPro
                 }
             }
         }
-        private void OnRenderFrameEventHandler(WPFSCPlayerPro player, SCFrame frame)
+        private void OnRenderFrameEventHandler(WPFSCPlayerPro player)
         {
             CheckNetworkSyncStatus();
 
@@ -663,7 +784,7 @@ namespace MediaPalyerPro
                 playerLastTimer[player.Name] = currentTime;
             }
         }
-        private void OnFirstFrameRenderEventHandler(WPFSCPlayerPro player, SCFrame frame)
+        private void OnFirstFrameRenderEventHandler(WPFSCPlayerPro player)
         {
             if (Log.IsDebugEnabled)
                 Log.Debug($"WPFSCPlayerPro({player.Name}) First Frame Render Evnet. URL: {player.Url}");
@@ -780,7 +901,7 @@ namespace MediaPalyerPro
                 player.Pause();
         }
 
-        private void OnRenderAudioEvent(WPFSCPlayerPro player, IntPtr arg2, int arg3)
+        private void OnRenderAudioEvent(WPFSCPlayerPro player)
         {
             this.Dispatcher.Invoke(() =>
             {
@@ -792,8 +913,7 @@ namespace MediaPalyerPro
                     CallPlayerEvent(player, "OnRenderFrame", currentTime, playerLastTimer[player.Name]);
                     playerLastTimer[player.Name] = currentTime;
                 }
-            });
-            
+            });            
         }
     }
 }

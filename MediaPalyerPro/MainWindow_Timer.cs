@@ -1,4 +1,5 @@
 ﻿using System.Configuration;
+using System.Net.Sockets;
 using System.Timers;
 using System.Windows;
 
@@ -77,6 +78,12 @@ namespace MediaPalyerPro
             TargetTimerCount = timerCount;
 
             TimerReset();
+        }
+
+        public static bool IsOnline(TcpClient _TcpClient)
+        {
+            if (_TcpClient?.Client == null) return false;
+            return !((_TcpClient.Client.Poll(1000, SelectMode.SelectRead) && (_TcpClient.Client.Available == 0)) || !_TcpClient.Client.Connected);
         }
 
     }
