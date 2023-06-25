@@ -19,10 +19,8 @@ namespace MediaPlayerPro
 
             if (result != CaptureOpenResult.SUCCESS) return;
 
-            if (!playerLastTimer.ContainsKey(player.Name))
-                playerLastTimer.Add(player.Name, 0.0f);
-            if (!playerRenderEvents.ContainsKey(player.Name))
-                playerRenderEvents.Add(player.Name, null);
+            if (!playerLastTimer.ContainsKey(player.Name))  playerLastTimer.Add(player.Name, 0.0f);
+            if (!playerRenderEvents.ContainsKey(player.Name)) playerRenderEvents.Add(player.Name, null);
 
             playerRenderEvents[player.Name] = null;
             if (CurrentItem?.Element(player.Name) != null)
@@ -88,13 +86,7 @@ namespace MediaPlayerPro
 
             CallPlayerEvent(player, "OnLastFrame");
 
-            if (ListAutoLoop)
-            {
-                if (CurrentItem.NextNode != null)
-                    LoadItem((XElement)CurrentItem.NextNode);
-                else
-                    LoadItem((XElement)CurrentItem.Parent.FirstNode);
-            }
+            if (ListAutoLoop) NextNode();
         }
 
     }

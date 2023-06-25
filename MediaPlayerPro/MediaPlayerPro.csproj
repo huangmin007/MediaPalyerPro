@@ -39,8 +39,8 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="SpaceCG.Generic, Version=1.0.13.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\SpaceCG.Generic.1.0.13\lib\netstandard2.0\SpaceCG.Generic.dll</HintPath>
+    <Reference Include="SpaceCG.Generic, Version=1.0.15.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\SpaceCG.Generic.1.0.15\lib\netstandard2.0\SpaceCG.Generic.dll</HintPath>
     </Reference>
     <Reference Include="Sttplay.MediaPlayer, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>

@@ -247,6 +247,7 @@ namespace MediaPlayerPro
         [Obsolete("兼容性处理函数")]
         private static void CompatibleProcess(XElement rootElements)
         {
+            //新旧元素节点名称的替换
             //key:oldElementNodeName, value:newElementNodeName
             Dictionary<string, string> OldElementName = new Dictionary<string, string>();
             OldElementName.Add("MiddleGroup", $"{CENTER}{CONTAINER}");
@@ -254,13 +255,65 @@ namespace MediaPlayerPro
             OldElementName.Add("MiddleButtons", $"{CENTER}{BUTTONS}");
             OldElementName.Add("ForegroundGroup", $"{FOREGROUND}{CONTAINER}");
             OldElementName.Add("BackgroundGroup", $"{BACKGROUND}{CONTAINER}");
-
             foreach (var element in rootElements.Descendants())
             {
                 string localName = element.Name.LocalName;
                 if (!OldElementName.ContainsKey(localName)) continue;
                 element.Name = OldElementName[localName];
             }
+
+            //控制接口属性 Target
+            IEnumerable<XElement> actions = rootElements.Descendants("Action");
+            foreach(var action in actions)
+            {
+                if (action.Attribute("Target") == null)
+                {
+                    XAttribute xTarget = action.Attribute("TargetObj") != null ? action.Attribute("TargetObj") : action.Attribute("TargetKey");
+                    if (xTarget == null) continue;
+                    action.Add(new XAttribute("Target", xTarget.Value));
+                }
+            }
         }
+
+        /// <summary>
+        /// 扩展类型转换
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="conversionType"></param>
+        /// <param name="conversionValue"></param>
+        /// <returns></returns>
+        private static bool ConvertChangeTypeExtension(object value, Type conversionType, out object conversionValue)
+        {
+            conversionValue = null;
+            if (value == null) return true;
+            if (conversionType == null) return false;
+
+            if (value.GetType() == conversionType)
+            {
+                conversionValue = value;
+                return true;
+            }
+            
+            if (value.GetType() == typeof(string))
+            {
+                string sValue = value.ToString();
+                if (String.IsNullOrWhiteSpace(sValue) || sValue.Replace(" ", "").ToLower() == "null") return true;
+
+                if(sValue.IndexOf('#') == 0 && conversionType == typeof(Brush))
+                {
+                    Color color = (Color)ColorConverter.ConvertFromString(sValue);
+                    conversionValue = new SolidColorBrush(color);
+                    return true;
+                }
+            }
+            else
+            {
+
+            }
+
+
+            return false;
+        }
+
     }
 }

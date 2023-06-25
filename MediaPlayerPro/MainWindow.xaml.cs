@@ -57,6 +57,7 @@ namespace MediaPlayerPro
         XmlParserContext xmlParserContext;
         XmlReaderSettings xmlReaderSettings;
         XamlXmlReaderSettings xamlXmlReaderSettings;
+        private Stopwatch stopwatch = new Stopwatch();
 
         public MainWindow()
         {
@@ -99,6 +100,8 @@ namespace MediaPlayerPro
             this.Window = this;
             ControlInterface = new ControlInterface(2023);
             ControlInterface.AccessObjects.Add("Window", this);
+
+            InstanceExtensions.ConvertChangeTypeExtension = ConvertChangeTypeExtension;
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -148,6 +151,7 @@ namespace MediaPlayerPro
                 CompatibleProcess(RootConfiguration);
                 CheckAndUpdateElements(RootConfiguration);
                 XElementExtensions.ReplaceTemplateElements(RootConfiguration, "Template", "RefTemplate", true);
+                Console.WriteLine(RootConfiguration);
             }
             catch (Exception ex)
             {
@@ -214,7 +218,8 @@ namespace MediaPlayerPro
 
             CurrentItem = item;
             CurrentItemID = int.TryParse(CurrentItem.Attribute("ID")?.Value, out int value) ? value : int.MinValue;
-
+            
+            stopwatch.Restart();
             try
             {
                 foreach (XElement element in item.Elements())
@@ -284,7 +289,6 @@ namespace MediaPlayerPro
                                 }
                             }
                         }
-
                     }
 
                     //Sub Element Actions
@@ -310,6 +314,8 @@ namespace MediaPlayerPro
                 MessageBox.Show($"配置解析或是执行异常：\r\n{ex}", "Error", MessageBoxButton.OK);
             }
 
+            stopwatch.Stop();
+            Log.Info($"Load And Analyse Item XElement use {stopwatch.ElapsedMilliseconds} ms");
             GC.Collect();
         }
 
@@ -331,7 +337,7 @@ namespace MediaPlayerPro
             {
                 if (currentTime >= 0 && lastTime >= 0)
                 {
-                    if (String.IsNullOrWhiteSpace(element.Parent.Attribute("Position")?.Value)) continue;
+                    if (string.IsNullOrWhiteSpace(element.Parent.Attribute("Position")?.Value)) continue;
                     if (!double.TryParse(element.Parent.Attribute("Position").Value, out double position)) continue;
 
                     if (!(position <= currentTime && position > lastTime)) continue;
@@ -342,7 +348,7 @@ namespace MediaPlayerPro
 
                 if (element.Name.LocalName == "Action")
                 {
-                    //CallActionElement(element);
+                    ControlInterface.TryParseControlMessage(element, out object returnResult);
                 }
                 else
                 {
@@ -350,90 +356,108 @@ namespace MediaPlayerPro
                 }
             }
         }
+        
         /// <summary>
-        /// Call Button Event
+        /// 调用 指定项 => 指定按扭容器 => 指定的按扭 => 事件或属性
         /// </summary>
-        /// <param name="button"></param>
-        protected void CallButtonEvent(Button button)
-        {
-            if (CurrentItem == null) return;
-
-            String name = button.Name;
-            String parent = button.Parent.GetValue(NameProperty).ToString();
-            Log.Info($"CallButtonEvent: {parent}.{name}");
-            if (CurrentItem.Element(parent) == null)
-            {
-                return;
-            }
-#if true
-            IEnumerable<XElement> events = from evs in CurrentItem.Element(parent).Elements("Events")
-                                           where evs.Attribute("Name")?.Value == "Click" &&
-                                           (String.IsNullOrWhiteSpace(evs.Attribute("Button")?.Value) || evs.Attribute("Button")?.Value == name)
-                                           select evs;
-#else
-            List<XElement> events = new List<XElement>();
-            foreach (var evs in CurrentItem.Element(parent).Elements("Events"))
-            {
-                if(evs.Attribute("Name")?.Value == "Click" && 
-                    (String.IsNullOrWhiteSpace(evs.Attribute("Button")?.Value) || evs.Attribute("Button")?.Value == name))
-                {
-                    events.Add(evs);
-                }
-            }
-#endif
-            foreach (XElement element in events?.Elements())
-            {
-                if (element.Name.LocalName == "Action")
-                {
-                    //this.CallActionElement(element);
-                }
-                else
-                {
-                    InstanceExtensions.SetInstancePropertyValues(this, element);
-                }
-            }
-        }
-        /// <summary>
-        /// Call指定项页面的按扭事件
-        /// </summary>
-        /// <param name="id">页面ID</param>
-        /// <param name="layerName"></param>
+        /// <param name="itemID">页面ID</param>
+        /// <param name="buttonContainer"></param>
         /// <param name="buttonName"></param>
-        public void CallButtonEvent(int id, string layerName, string buttonName)
+        public void CallButtonEvent(int itemID, string buttonContainer, string buttonName)
         {
+            stopwatch.Restart();
             IEnumerable<XElement> events = from item in ItemElements
-                                           where item.Attribute("ID")?.Value.Trim() == id.ToString()
-                                           from element in item.Elements()
-                                           where element.Name.LocalName == layerName
-                                           from evElement in element.Elements("Events")
-                                           where evElement.Attribute("Name")?.Value?.Trim() == "Click" && evElement.Attribute("Button")?.Value?.Trim() == buttonName
-                                           select evElement;
+                                           where item.Attribute("ID")?.Value.Trim() == itemID.ToString()
+                                           from container in item.Elements(buttonContainer)
+                                           from evt in container.Elements("Events")
+                                           where evt.Attribute("Name")?.Value.Trim() == "Click" && evt.Attribute("Button")?.Value.Trim() == buttonName
+                                           select evt;
 
-            Log.Info($"CallButtonEvent: ItemID: {id}  LayerName:{layerName}  ButtonName: {buttonName}  Count: {events?.Count()}");
+            Log.Info($"CallButtonEvent: ItemID: {itemID}  LayerName:{buttonContainer}  ButtonName: {buttonName}  Count: {events?.Count()}");
 
             foreach (XElement element in events.Elements())
             {
                 if (element.Name.LocalName == "Action")
                 {
-                    //this.CallActionElement(element);
+                    ControlInterface.TryParseControlMessage(element, out object returnResult);
                 }
                 else
                 {
                     InstanceExtensions.SetInstancePropertyValues(this, element);
                 }
             }
+
+            stopwatch.Stop();
+            Log.Info($"Call Button Events use {stopwatch.ElapsedMilliseconds} ms");
         }
         /// <summary>
-        /// Call当前项或页面)的按扭事件
+        /// 调用 当前项(<see cref="CurrentItemID"/>) => 指定按扭容器 => 指定的按扭 => 事件或属性
         /// </summary>
-        /// <param name="buttonsLayer"></param>
+        /// <param name="buttonContainer"></param>
         /// <param name="buttonName"></param>
-        public void CallButtonEvent(string buttonsLayer, string buttonName)
+        public void CallButtonEvent(string buttonContainer, string buttonName) => CallButtonEvent(CurrentItemID, buttonContainer, buttonName);
+        /// <summary>
+        /// 调用 当前项(<see cref="CurrentItemID"/>) => 当前最顶端的显示按扭容器 => 指定的按扭 => 事件或属性
+        /// </summary>
+        /// <param name="buttonName"></param>
+        public void CallButtonEvent(string buttonName)
         {
-            if (int.TryParse(CurrentItem.Attribute("ID")?.Value, out int id))
-                CallButtonEvent(id, buttonsLayer, buttonName);
-        }
+            var btnContainer = ForegroundContainer.Visibility == Visibility.Visible && ForegroundButtons.Visibility == Visibility.Visible ? ForegroundButtons :
+                               CenterContainer.Visibility == Visibility.Visible && CenterButtons.Visibility == Visibility.Visible ? CenterButtons :
+                               BackgroundContainer.Visibility == Visibility.Visible && BackgroundButtons.Visibility == Visibility.Visible ? BackgroundButtons : null;
 
+            CallButtonEvent(CurrentItemID, btnContainer.Name, buttonName);
+        }
+        /// <summary>
+        /// Call Button Event
+        /// </summary>
+        /// <param name="button"></param>
+        protected bool CallButtonEvent(Button button)
+        {
+            XElement buttonElements = (button.Parent as FrameworkElement)?.ToolTip as XElement;
+            if (buttonElements == null) return false;
+
+            IEnumerable<XElement> events = from evs in buttonElements.Elements("Events")
+                                           where evs.Attribute("Name")?.Value == "Click" && evs.Attribute("Button")?.Value == button.Name
+                                           select evs;
+            if (events?.Count() <= 0) return false;
+
+            foreach (XElement element in events?.Elements())
+            {
+                if (element.Name.LocalName == "Action")
+                {
+                    ControlInterface.TryParseControlMessage(element, out object returnResult);
+                }
+                else
+                {
+                    InstanceExtensions.SetInstancePropertyValues(this, element);
+                }
+            }
+            return true;
+        }
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            Button button = (Button)sender;
+            Log.Info($"Click Button: {button.Name}  ToolTip: {button.ToolTip}");
+
+            TimerReset();
+            if (!CallButtonEvent(button) && button.ToolTip != null)
+            {
+                String[] tips = button.ToolTip.ToString().Split('.');
+                CallButtonEvent(int.Parse(tips[0]), tips[1], tips[2]);
+            }
+        }
+        private void WPFSCPlayerPro_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            WPFSCPlayerPro player = (WPFSCPlayerPro)sender;
+
+            if (!IsVideoFile(player.Url)) return;
+
+            if (player.IsPaused)
+                player.Play();
+            else
+                player.Pause();
+        }
         private void UIElement_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
             Type type = sender.GetType();
@@ -462,38 +486,9 @@ namespace MediaPlayerPro
                 }
             }
 
-            CurrentPlayer = ForegroundContainer.Visibility == Visibility && ForegroundPlayer.Visibility == Visibility.Visible ? ForegroundPlayer :
-                            CenterContainer.Visibility == Visibility && CenterPlayer.Visibility == Visibility.Visible ? CenterPlayer :
-                            BackgroundContainer.Visibility == Visibility && BackgroundPlayer.Visibility == Visibility.Visible ? BackgroundPlayer : null;
-        }
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            Button button = (Button)sender;
-            Log.Info($"Click Button: {button.Name}  ToolTip: {button.ToolTip}");
-
-            TimerReset();
-            if (button.ToolTip != null)
-            {
-                String[] tips = button.ToolTip.ToString().Split('.');
-                CallButtonEvent(int.Parse(tips[0]), tips[1], tips[2]);
-            }
-            else
-            {
-                CallButtonEvent(button);
-            }
-        }
-
-        private void WPFSCPlayerPro_MouseDown(object sender, MouseButtonEventArgs e)
-        {
-            WPFSCPlayerPro player = (WPFSCPlayerPro)sender;
-
-            if (!IsVideoFile(player.Url)) return;
-
-            if (player.IsPaused)
-                player.Play();
-            else
-                player.Pause();
+            CurrentPlayer = ForegroundContainer.Visibility == Visibility.Visible && ForegroundPlayer.Visibility == Visibility.Visible ? ForegroundPlayer :
+                            CenterContainer.Visibility == Visibility.Visible && CenterPlayer.Visibility == Visibility.Visible ? CenterPlayer :
+                            BackgroundContainer.Visibility == Visibility.Visible && BackgroundPlayer.Visibility == Visibility.Visible ? BackgroundPlayer : null;
         }
 
     }

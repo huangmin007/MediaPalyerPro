@@ -25,7 +25,7 @@ namespace Test
         {
             string path = @"E:\2020\005_Projects\2023_MediaPlayerPro\MediaPlayerPro\MediaPlayerPro\";
 
-            LoadConfig($"{path}\\MediaContents.Page.Config");
+            //LoadConfig($"{path}\\MediaContents.Page.Config");
         }
 
         public void LoadConfig(string fileName)

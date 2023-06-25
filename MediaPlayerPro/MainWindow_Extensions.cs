@@ -16,7 +16,7 @@ namespace MediaPlayerPro
         /// <param name="loop"></param>
         public void SetListLoop(bool loop)
         {
-
+            ListAutoLoop = loop;
         }
 
         /// <summary>
@@ -25,9 +25,9 @@ namespace MediaPlayerPro
         /// <param name="volume"></param>
         public void SetVolume(float volume)
         {
-            //CenterPlayer.SetVolume(volume);
-            //BackgroundPlayer.SetVolume(volume);
-            //ForegroundPlayer.SetVolume(volume);
+            CenterPlayer.Volume = volume;
+            BackgroundPlayer.Volume = volume;
+            ForegroundPlayer.Volume = volume;
         }
 
         /// <summary>
@@ -35,18 +35,24 @@ namespace MediaPlayerPro
         /// </summary>
         public void VolumeUp()
         {
-            //CenterPlayer.VolumeUp();
-            //BackgroundPlayer.VolumeUp();
-            //ForegroundPlayer.VolumeUp();
+            float volume = CurrentPlayer.Volume;
+            volume = volume + 0.1f >= 1.0f ? 1.0f : volume + 0.1f;
+
+            CenterPlayer.Volume = volume;
+            BackgroundPlayer.Volume = volume;
+            ForegroundPlayer.Volume = volume;
         }
         /// <summary>
         /// 音量减小 10%
         /// </summary>
         public void VolumeDown()
         {
-            //CenterPlayer.VolumeDown();
-            //BackgroundPlayer.VolumeDown();
-            //ForegroundPlayer.VolumeDown();
+            float volume = CurrentPlayer.Volume;
+            volume = volume - 0.1f <= 0.0f ? 0.0f : volume - 0.1f;
+
+            CenterPlayer.Volume = volume;
+            BackgroundPlayer.Volume = volume;
+            ForegroundPlayer.Volume = volume;
         }
 
         /// <summary>
@@ -55,9 +61,33 @@ namespace MediaPlayerPro
         public void NextItem()
         {
             if (CurrentItem == null) return;
-            if (int.TryParse(CurrentItem.Attribute("ID")?.Value, out int id))
+
+            //向下查找 Item
+            int nextId = CurrentItemID + 1;
+            IEnumerable<XElement> nextItems = from item in ItemElements
+                                              where item.Attribute("ID")?.Value == nextId.ToString()
+                                              select item;
+            if (nextItems?.Count() == 1)
             {
-                LoadItem(id + 1);
+                LoadItem(nextId);
+                return;
+            }
+
+            //向上查找 Item
+            int prevId = CurrentItemID - 1;
+            while (true)
+            {
+                IEnumerable<XElement> prevItems = from item in ItemElements
+                                                  where item.Attribute("ID")?.Value == prevId.ToString()
+                                                  select item;
+
+                if (prevItems?.Count() <= 0)
+                {
+                    LoadItem(prevId + 1);
+                    return;
+                }
+
+                prevId --;
             }
         }
         /// <summary>
@@ -66,10 +96,33 @@ namespace MediaPlayerPro
         public void PrevItem()
         {
             if (CurrentItem == null) return;
-            if (int.TryParse(CurrentItem.Attribute("ID")?.Value, out int id))
+
+            //向上查找 Item
+            int prevId = CurrentItemID - 1;
+            IEnumerable<XElement> prevItems = from item in ItemElements
+                                              where item.Attribute("ID")?.Value == prevId.ToString()
+                                              select item;
+            if (prevItems?.Count() == 1)
             {
-                LoadItem(id - 1);
+                LoadItem(prevId);
+                return;
             }
+
+            //向下查找 Item
+            int nextId = CurrentItemID + 1;
+            while(true)
+            {
+                IEnumerable<XElement> nextItems = from item in ItemElements
+                                                  where item.Attribute("ID")?.Value == nextId.ToString()
+                                                  select item;
+                if (nextItems?.Count() <= 0)
+                {
+                    LoadItem(nextId - 1);
+                    return;
+                }
+
+                nextId ++;
+            }            
         }
         /// <summary>
         /// 下一个节点

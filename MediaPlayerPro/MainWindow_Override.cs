@@ -1,17 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Configuration;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
-using System.Xml.Linq;
 using SpaceCG.Extensions;
+using SpaceCG.Generic;
 
 namespace MediaPlayerPro
 {
@@ -81,9 +74,7 @@ namespace MediaPlayerPro
                 case Key.D:
                     if (e.KeyboardDevice.Modifiers == ModifierKeys.Control)
                     {
-                        //log4net.Repository.Hierarchy.Logger root = ((log4net.Repository.Hierarchy.Hierarchy)log4net.LogManager.GetRepository()).Root;
-                        //root.Level = (root.Level == log4net.Core.Level.Info) ? log4net.Core.Level.Debug : log4net.Core.Level.Info;
-                        //Log.Warn($"Root Logger Current Level: {root.Level}");
+                        LoggerTrace.FileTraceLevels = SourceLevels.All;
 
                         this.Topmost = false;
                         this.WindowState = WindowState.Normal;
@@ -125,8 +116,6 @@ namespace MediaPlayerPro
                 case Key.Escape:
                     this.Close();
                     Application.Current.Shutdown(0);
-                    //this.WindowState = WindowState.Normal;
-                    //this.WindowStyle = WindowStyle.SingleBorderWindow;
                     break;
             }
         }
@@ -135,9 +124,9 @@ namespace MediaPlayerPro
         protected override void OnPreviewMouseDown(MouseButtonEventArgs e)
         {
             base.OnPreviewMouseDown(e);
-            if (Log.IsDebugEnabled) Log.Debug($"On Preview Mouse Down");
 
             TimerReset();
+            if (Log.IsDebugEnabled) Log.Debug($"On Preview Mouse Down");
         }
 
     }
