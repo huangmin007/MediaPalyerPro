@@ -28,7 +28,7 @@ namespace Test
         private XElement RootElement = null;
         private IEnumerable<XElement> ListItems;
 
-        TcpClient tcpClient = new TcpClient();
+        //TcpClient tcpClient = new TcpClient();
 
         public MainWindow()
         {
@@ -42,46 +42,10 @@ namespace Test
             LoadConfig($"{path}\\MediaContents.Page.Config");
         }
 
-        private async void Connect()
+        private void Connect()
         {
-            if (tcpClient.Connected)
-            {
-                return;
-            }
 
-            try
-            {
-                tcpClient.ExclusiveAddressUse = true;
-                await tcpClient.ConnectAsync("127.0.0.1", 60000);
-            }
-            catch(Exception ex)
-            {
-                Console.WriteLine(ex);
-            }
-            Console.WriteLine($"Connect:::{tcpClient.Connected}");
-#if false
-            IAsyncResult asyncresult = tcpClient.Client.BeginConnect("127.0.0.1", 60000, null, null);
-            bool result = asyncresult.AsyncWaitHandle.WaitOne(3000);
-            if (!asyncresult.IsCompleted)
-            {
-                Console.WriteLine($"Cannot to Connect Server: {tcpClient.Connected}");
-                Connect();
-            }
-            Console.WriteLine($"Iscompleted.{tcpClient.Connected} // {result}");
 
-            try
-            {
-                tcpClient.Client.EndConnect(asyncresult);
-            }
-            catch (Exception ex)
-            {
-
-            }
-#endif
-            if (!tcpClient.Connected)
-            {
-                Connect();
-            }
         }
 
         public void LoadConfig(string fileName)
@@ -235,21 +199,12 @@ namespace Test
             Button button = sender as Button;
             if(button == Button_Connect)
             {
-                Connect();
             }
             else if(button == Button_Close)
-            {
-                //tcpClient.Client.Disconnect(true);
-                tcpClient.Client.BeginDisconnect(true, (ar)=>
-                {
-                    Console.WriteLine("EndDisconnect");
-                    tcpClient.Client.EndDisconnect(ar);
-                }, null);
-                Console.WriteLine("Client.Disconnect");
+            {                
             }
             else if(button == Button_Write)
             {
-
             }
         }
     }
