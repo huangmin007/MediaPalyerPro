@@ -50,6 +50,9 @@
     <Reference Include="NModbus4, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\NModbus4.2.1.0\lib\net40\NModbus4.dll</HintPath>
     </Reference>
+    <Reference Include="Sttplay.MediaPlayer">
+      <HintPath>..\..\..\2023_BYD\BYD比亚迪主动悬架展品\BYD_DEMO\DEMO_CAR_P\bin\Release\Sttplay.MediaPlayer.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Data" />
@@ -108,18 +111,6 @@
     <Compile Include="SpaceCG\WindowsAPI\User32\WindowMessageType.cs" />
     <Compile Include="SpaceCG\WindowsAPI\User32\WindowRect.cs" />
     <Compile Include="SpaceCG\WindowsAPI\WinDef.cs" />
-    <Compile Include="STTPlayer\Renderer\IXRenderer.cs" />
-    <Compile Include="STTPlayer\Renderer\Renderer.cs" />
-    <Compile Include="STTPlayer\Renderer\RendererBitmap.cs" />
-    <Compile Include="STTPlayer\Renderer\RendererD3D9.cs" />
-    <Compile Include="STTPlayer\Renderer\RendererUtility.cs" />
-    <Compile Include="STTPlayer\Renderer\RendererX.cs" />
-    <Compile Include="STTPlayer\SCAudioPlayer.cs" />
-    <Compile Include="STTPlayer\SCClock.cs" />
-    <Compile Include="STTPlayer\SCInterface.cs" />
-    <Compile Include="STTPlayer\SCMGR.cs" />
-    <Compile Include="STTPlayer\SCPlayerPro.cs" />
-    <Compile Include="STTPlayer\WPFSCPlayerPro.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -154,7 +145,7 @@
     <None Include="Log4Net.Config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="MediaContents.Config">
+    <None Include="MediaContents.Sound.Config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="MediaContents.Page.Config">
@@ -165,7 +156,7 @@
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
-    <None Include="MediaContents.Back.Config">
+    <None Include="MediaContents.Config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="SpaceCG\WindowsAPI\README.md" />
