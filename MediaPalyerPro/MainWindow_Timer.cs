@@ -62,6 +62,8 @@ namespace MediaPalyerPro
         /// </summary>
         public void TimerReset()
         {
+            if (Timer == null) return;
+
             ListAutoLoop = false;
             CurrentTimerCount = 0;
             if(!Timer.Enabled)   Timer.Start();

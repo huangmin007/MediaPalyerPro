@@ -57,7 +57,6 @@ namespace MediaPalyerPro
         int port;
         string address;
         TcpClient ModbusTcpClient;
-
         /// <summary>
         /// 当前线程同步上下文
         /// </summary>
@@ -310,21 +309,7 @@ namespace MediaPalyerPro
                 return HandleResult.Ok;
             }
 
-            try
-            {
-                this.Dispatcher.Invoke(() =>
-                {
-                    if (element.Name.LocalName == "Action")
-                        this.CallActionElement(element);
-                    else
-                        InstanceExtensions.ChangeInstancePropertyValue(this, element);
-                });
-            }
-            catch (Exception ex)
-            {
-                Log.Error($"数据执行错误：{ex}");
-            }
-
+            this.CallActionElement(element);
             return HandleResult.Ok;
         }
 
@@ -603,7 +588,7 @@ namespace MediaPalyerPro
         /// Call Action XElement
         /// </summary>
         /// <param name="action"></param>
-        protected void CallActionElement(XElement action)
+        protected void CallActionElement_(XElement action)
         {
             if (action?.Name?.LocalName != "Action") return;
 
@@ -663,16 +648,20 @@ namespace MediaPalyerPro
                 Log.Error($"执行目标对象配置错误：{ex}");
             }
         }
-
-        protected void CallActionElement2(XElement action)
+        /// <summary>
+        /// Call Action XElement
+        /// </summary>
+        /// <param name="action"></param>
+        protected void CallActionElement(XElement action)
         {
-            if (action?.Name?.LocalName != "Action") return;
+            if (action == null || SyncContext == null) return;
+            if (action.Name?.LocalName != "Action") return;
 
             Object target = null;
             if (action.Attribute("TargetObj") != null)
-                target = InstanceExtensions.GetInstanceFieldObject(this, action?.Attribute("TargetObj")?.Value);
+                target = InstanceExtensions.GetInstanceFieldObject(this, action.Attribute("TargetObj")?.Value);
             else if (action.Attribute("TargetKey") != null)
-                target = AccessObjects.TryGetValue(action?.Attribute("TargetKey")?.Value, out IDisposable obj) ? obj : null;
+                target = AccessObjects.TryGetValue(action.Attribute("TargetKey")?.Value, out IDisposable obj) ? obj : null;
             if (target == null)
             {
                 Log.Warn($"未找到配置的目标对象：{action}");
@@ -688,43 +677,28 @@ namespace MediaPalyerPro
                 {
                     if (action.Attribute("Method").Value == "Sleep")
                     {
-                        InstanceExtensions.CallInstanceMethod(target, action.Attribute("Method").Value, StringExtension.ConvertParameters(action.Attribute("Params").Value));
-                        return;
-                    }
-                    if (SyncContext != null)
-                    {
                         SyncContext.Send((o) =>
                         {
-                            if (!String.IsNullOrWhiteSpace(action.Attribute("Params")?.Value))
-                                InstanceExtensions.CallInstanceMethod(target, action.Attribute("Method").Value, StringExtension.ConvertParameters(action.Attribute("Params").Value));
-                            else
-                                InstanceExtensions.CallInstanceMethod(target, action.Attribute("Method").Value);
+                            InstanceExtensions.CallInstanceMethod(target, action.Attribute("Method").Value, StringExtension.ConvertParameters(action.Attribute("Params").Value));
+                            return;
                         }, null);
                     }
-                    /*
-                    Task.Run(() =>
+
+                    SyncContext.Send((o) =>
                     {
-                        
-                        this.Dispatcher.Invoke(() =>
-                        {
-                            if (!String.IsNullOrWhiteSpace(action.Attribute("Params")?.Value))
-                                InstanceExtensions.CallInstanceMethod(target, action.Attribute("Method").Value, StringExtension.ConvertParameters(action.Attribute("Params").Value));
-                            else
-                                InstanceExtensions.CallInstanceMethod(target, action.Attribute("Method").Value);
-                        });
-                        
-                    });*/
+                        if (!String.IsNullOrWhiteSpace(action.Attribute("Params")?.Value))
+                            InstanceExtensions.CallInstanceMethod(target, action.Attribute("Method").Value, StringExtension.ConvertParameters(action.Attribute("Params").Value));
+                        else
+                            InstanceExtensions.CallInstanceMethod(target, action.Attribute("Method").Value);
+                    }, null);
                 }
                 //Property
                 else if (!String.IsNullOrWhiteSpace(action.Attribute("Property")?.Value) && !String.IsNullOrWhiteSpace(action.Attribute("Value")?.Value))
                 {
-                    Task.Run(() =>
+                    SyncContext.Send((o) =>
                     {
-                        this.Dispatcher.Invoke(() =>
-                        {
-                            InstanceExtensions.ChangeInstancePropertyValue(target, action.Attribute("Property").Value, action.Attribute("Value").Value);
-                        });
-                    });
+                        InstanceExtensions.ChangeInstancePropertyValue(target, action.Attribute("Property").Value, action.Attribute("Value").Value);
+                    }, null);
                 }
                 //Other
                 else
@@ -841,19 +815,19 @@ namespace MediaPalyerPro
 
             if (player != null)
             {
-                FrameworkElement parent = (FrameworkElement)player.Parent;
+                FrameworkElement parent = player.Parent as FrameworkElement;
                 Log.Info($"WPFSCPlayerPro({player.Name})  IsVisibleChanged:{player.Visibility}  NewValue:{e.NewValue}");
-                if (player.Visibility != Visibility.Visible || parent.Visibility != Visibility.Visible)
+                if (player.Visibility != Visibility.Visible || parent?.Visibility != Visibility.Visible)
                 {
                     player.Pause();
                 }
             }
 
-            CurrentPlayer = ForegroundPlayer.Visibility == Visibility.Visible ? ForegroundPlayer :
-                            MiddlePlayer.Visibility == Visibility.Visible ? MiddlePlayer :
-                            BackgroundPlayer.Visibility == Visibility.Visible ? BackgroundPlayer : null;
+            CurrentPlayer = ForegroundContainer.Visibility == Visibility.Visible && ForegroundPlayer.Visibility == Visibility.Visible ? ForegroundPlayer :
+                            MiddleContainer.Visibility == Visibility.Visible && MiddlePlayer.Visibility == Visibility.Visible ? MiddlePlayer :
+                            BackgroundContainer.Visibility == Visibility.Visible && BackgroundPlayer.Visibility == Visibility.Visible ? BackgroundPlayer : null;
         }
-        
+
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             Button button = (Button)sender;
