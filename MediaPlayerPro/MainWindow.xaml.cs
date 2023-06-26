@@ -13,6 +13,7 @@ using System.Xml;
 using System.Xaml;
 using SpaceCG.Generic;
 using SpaceCG.Extensions;
+using System.Threading;
 
 namespace MediaPlayerPro
 {
@@ -32,9 +33,14 @@ namespace MediaPlayerPro
         internal const string BUTTONS = "Buttons";
         internal const string CONTAINER = "Container";
 
+        /// <summary> 元素名称 </summary>
+        private static List<String> FrameworkElements = new List<String>();
+        /// <summary> 元素禁用属性 </summary>
+        private static List<String> DisableAttributes = new List<string>() { "Name", "Content" };
+
+
         private XElement RootConfiguration = null;
         private IEnumerable<XElement> ItemElements;
-
         private XElement CurrentItem = null;
         private int CurrentItemID = int.MinValue;
 
@@ -43,11 +49,6 @@ namespace MediaPlayerPro
         private Process ProcessModule;
         private MainWindow Window;
         private LoggerWindow LoggerWindow;
-
-        /// <summary> 元素名称 </summary>
-        private static List<String> FrameworkElements = new List<String>();
-        /// <summary> 元素禁用属性 </summary>
-        private static List<String> DisableAttributes = new List<string>() { "Name", "Content" };
 
         /// <summary> 当前播放器 </summary>
         private WPFSCPlayerPro CurrentPlayer;
@@ -63,10 +64,14 @@ namespace MediaPlayerPro
         {
             InitializeComponent();
             SetInstancePropertyValues(this, "Window.");
-            this.Title = "Meida Player Pro v1.0.20230620";
             //this.Title = "Meida Player Pro " + (!String.IsNullOrWhiteSpace(this.Title) ? $"({this.Title})" : "");
 
+            this.Window = this;
+            this.Title = "Meida Player Pro v1.0.20230620"; 
             LoggerWindow = new LoggerWindow();
+            ControlInterface = new ControlInterface(2023);
+            ControlInterface.AccessObjects.Add("Window", this.Window);
+            InstanceExtensions.ConvertChangeTypeExtension = ConvertChangeTypeExtension;
 
             this.RootContainer.Width = this.Width;
             this.RootContainer.Height = this.Height;
@@ -93,14 +98,13 @@ namespace MediaPlayerPro
                     subChild.SetValue(ToolTipService.IsEnabledProperty, false);
 #endif
                     Console.WriteLine($"\tFrameworkElement: {subChild.Name}({subChild})");
+
+                    if(subChild.GetType() == typeof(WPFSCPlayerPro))
+                    {
+                        ControlInterface.AccessObjects.Add(subChild.Name, subChild);
+                    }
                 }
             }
-
-            this.Window = this;
-            ControlInterface = new ControlInterface(2023);
-            ControlInterface.AccessObjects.Add("Window", this);
-
-            InstanceExtensions.ConvertChangeTypeExtension = ConvertChangeTypeExtension;
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -444,14 +448,20 @@ namespace MediaPlayerPro
 
             foreach (XElement element in events?.Elements())
             {
+                Console.WriteLine(element);
+
                 if (element.Name.LocalName == "Action")
                 {
                     ControlInterface.TryParseControlMessage(element, out object returnResult);
                 }
                 else
                 {
+                    Console.WriteLine($"0000>>{BackgroundPlayer.Volume} {BackgroundPlayer.Url} {BackgroundPlayer.AutoOpen} {BackgroundPlayer.OpenAndPlay}");
                     InstanceExtensions.SetInstancePropertyValues(this, element);
+                    Console.WriteLine($"1111>>{BackgroundPlayer.Volume} {BackgroundPlayer.Url} {BackgroundPlayer.AutoOpen} {BackgroundPlayer.OpenAndPlay}");
                 }
+
+                Thread.Sleep(100);
             }
             return true;
         }

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
@@ -228,7 +227,19 @@ namespace MediaPlayerPro
                     XAttribute imageSource = element.Attribute("ImageSource");
                     imageSource.Value = Path.Combine(Environment.CurrentDirectory, imageSource?.Value);
                 }
-                //1.移除显示对象不可访问的属性
+#if false
+                //1.控制接口属性 Target
+                else if(localName == "Action")
+                {
+                    if (element.Attribute("Target") == null)
+                    {
+                        XAttribute xTarget = element.Attribute("TargetObj") != null ? element.Attribute("TargetObj") : element.Attribute("TargetKey");
+                        if (xTarget == null) continue;
+                        element.Add(new XAttribute("Target", xTarget.Value));
+                    }
+                }
+#endif
+                //2.移除显示对象禁止访问的属性
                 else if (FrameworkElements.IndexOf(localName) != -1)
                 {
                     foreach (string xname in DisableAttributes)
@@ -247,7 +258,7 @@ namespace MediaPlayerPro
         [Obsolete("兼容性处理函数")]
         private static void CompatibleProcess(XElement rootElements)
         {
-            //新旧元素节点名称的替换
+            //0.新旧元素节点名称的替换
             //key:oldElementNodeName, value:newElementNodeName
             Dictionary<string, string> OldElementName = new Dictionary<string, string>();
             OldElementName.Add("MiddleGroup", $"{CENTER}{CONTAINER}");
@@ -262,7 +273,7 @@ namespace MediaPlayerPro
                 element.Name = OldElementName[localName];
             }
 
-            //控制接口属性 Target
+            //0.控制接口属性 Target
             IEnumerable<XElement> actions = rootElements.Descendants("Action");
             foreach(var action in actions)
             {
@@ -270,9 +281,12 @@ namespace MediaPlayerPro
                 {
                     XAttribute xTarget = action.Attribute("TargetObj") != null ? action.Attribute("TargetObj") : action.Attribute("TargetKey");
                     if (xTarget == null) continue;
-                    action.Add(new XAttribute("Target", xTarget.Value));
+                    //替换旧的显示对象名称
+                    string value = OldElementName.ContainsKey(xTarget.Value) ? OldElementName[xTarget.Value] : xTarget.Value;
+                    action.Add(new XAttribute("Target", value));
                 }
             }
+
         }
 
         /// <summary>
@@ -285,19 +299,13 @@ namespace MediaPlayerPro
         private static bool ConvertChangeTypeExtension(object value, Type conversionType, out object conversionValue)
         {
             conversionValue = null;
-            if (value == null) return true;
             if (conversionType == null) return false;
 
-            if (value.GetType() == conversionType)
-            {
-                conversionValue = value;
-                return true;
-            }
-            
+            if (value == null) return true;                        
             if (value.GetType() == typeof(string))
             {
                 string sValue = value.ToString();
-                if (String.IsNullOrWhiteSpace(sValue) || sValue.Replace(" ", "").ToLower() == "null") return true;
+                if (String.IsNullOrWhiteSpace(sValue) || sValue.ToLower().Trim() == "null") return true;
 
                 if(sValue.IndexOf('#') == 0 && conversionType == typeof(Brush))
                 {

@@ -9,15 +9,25 @@ namespace MediaPlayerPro
 {
     public partial class MainWindow : Window
     {
+        internal const string OnLastFrame = "OnLastFrame";
+        internal const string OnFirstFrame = "OnFirstFrame";
+        internal const string OnRenderFrame = "OnRenderFrame";
+        internal const string OnVideoRenderFrame = "OnVideoRenderFrame";
+        internal const string OnAudioRenderFrame = "OnAudioRenderFrame";
+
         private Dictionary<String, double> playerLastTimer = new Dictionary<string, double>();
         private Dictionary<String, IEnumerable<XElement>> playerRenderEvents = new Dictionary<string, IEnumerable<XElement>>();
 
         private void OnCaptureOpenCallbackEvent(WPFSCPlayerPro player, CaptureOpenResult result, string message, OpenCallbackContext context)
         {
-            if (Log.IsDebugEnabled)
-                Log.Debug($"WPFSCPlayerPro({player.Name}) On Capture Open Callback Event, Result: {result}  Message: {message}");
+            if (result != CaptureOpenResult.SUCCESS)
+            {
+                Log.Warn($"WPFSCPlayerPro({player.Name}) On Capture Open Callback Event URL:{player.Url}, Result: {result}  Message: {message}");
+                return;
+            }
 
-            if (result != CaptureOpenResult.SUCCESS) return;
+            if (Log.IsDebugEnabled)
+                Log.Debug($"WPFSCPlayerPro({player.Name}) On Capture Open Callback Event URL:{player.Url}, Result: {result}  Message: {message}");
 
             if (!playerLastTimer.ContainsKey(player.Name))  playerLastTimer.Add(player.Name, 0.0f);
             if (!playerRenderEvents.ContainsKey(player.Name)) playerRenderEvents.Add(player.Name, null);
