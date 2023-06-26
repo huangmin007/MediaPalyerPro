@@ -52,7 +52,7 @@ namespace MediaPlayerPro
             base.OnPreviewKeyDown(e);
             if (e.IsRepeat) return;
 
-            TimerReset();
+            RestartTimer();
             Log.Info($"OnKeyDown: {e.KeyboardDevice.Modifiers} - {e.Key}");
 
             switch (e.Key)
@@ -125,7 +125,7 @@ namespace MediaPlayerPro
         {
             base.OnPreviewMouseDown(e);
 
-            TimerReset();
+            RestartTimer();
             if (Log.IsDebugEnabled) Log.Debug($"On Preview Mouse Down");
         }
 

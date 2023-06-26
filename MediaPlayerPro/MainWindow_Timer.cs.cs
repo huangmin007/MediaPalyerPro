@@ -1,39 +1,53 @@
-﻿using System.Configuration;
-using System.Timers;
+﻿using System.Timers;
 using System.Windows;
+using System.Xml.Linq;
 
 namespace MediaPlayerPro
 {
     public partial class MainWindow : Window
     {
         private Timer Timer;
-
         private int CurrentTimerCount = 0;
 
-        private int TimerNextItemID = -1;
-        private int TargetTimerCount = 480;
+        protected int TimerNextItemID = -1;
+        protected int TargetTimerCount = -1;
 
-        private void InitializeTimer()
+        private void InitializeTimer(XElement timerElement)
         {
-            Timer = new Timer();
-            Timer.Enabled = true;
-            Timer.Interval = 1000;
-            Timer.Elapsed += Timer_Elapsed;
-            Timer.Start();
+            if (timerElement == null) return;
+
+            TimerNextItemID = -1;
+            TargetTimerCount = -1;
+            CurrentTimerCount = 0;
+
+            if (Timer == null)
+            {
+                Timer = new Timer();
+                Timer.Interval = 1000;
+                Timer.Elapsed += Timer_Elapsed;
+            }
 
 #if DEBUG
             TargetTimerCount = 10;
 #else
-            if (int.TryParse(ConfigurationManager.AppSettings["Timer.Count"], out int count))
+            if(int.TryParse(timerElement.Attribute("Count")?.Value, out int count))
+            {
                 TargetTimerCount = count;
+            }
 #endif
-            if (int.TryParse(ConfigurationManager.AppSettings["Timer.LoadItem"], out int id))
-                TimerNextItemID = id;
+            if (int.TryParse(timerElement.Attribute("LoadItem")?.Value, out int nextId))
+            {
+                TimerNextItemID = nextId;
+            }
+
+            if (TargetTimerCount > 0) Timer?.Start();
+            else Timer?.Stop();
         }
 
         private void Timer_Elapsed(object sender, ElapsedEventArgs e)
         {
             if (RootConfiguration == null || CurrentItem == null) return;
+
             CurrentTimerCount++;
 
             if (TargetTimerCount > 0 && CurrentTimerCount >= TargetTimerCount)
@@ -42,13 +56,9 @@ namespace MediaPlayerPro
 
                 Timer.Stop();
                 CurrentTimerCount = 0;
+                if (CurrentItemID == TimerNextItemID) return;
 
-                if (int.TryParse(CurrentItem.Attribute("ID")?.Value, out int id))
-                {
-                    if (TimerNextItemID == id) return;
-                }
-
-                this.Dispatcher.Invoke(() =>
+                this.Dispatcher.InvokeAsync(() =>
                 {
                     Log.Info($"Current Timer Count: {CurrentTimerCount}  Load Item ID: {TimerNextItemID}  ListAutoLoop: {ListAutoLoop}");
                     LoadItem(TimerNextItemID);
@@ -59,9 +69,10 @@ namespace MediaPlayerPro
         /// <summary>
         /// 重置 Timer 计数器
         /// </summary>
-        public void TimerReset()
+        public void RestartTimer()
         {
-            ListAutoLoop = false;
+            if (Timer == null) return;
+
             CurrentTimerCount = 0;
             if (!Timer.Enabled) Timer.Start();
         }
@@ -76,7 +87,7 @@ namespace MediaPlayerPro
             TimerNextItemID = id;
             TargetTimerCount = timerCount;
 
-            TimerReset();
+            RestartTimer();
         }
 
     }

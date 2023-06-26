@@ -67,7 +67,6 @@ namespace MediaPlayerPro
             //this.Title = "Meida Player Pro " + (!String.IsNullOrWhiteSpace(this.Title) ? $"({this.Title})" : "");
 
             LoggerWindow = new LoggerWindow();
-            ProcessModule = CreateProcessModule("Process.FileName");
 
             this.RootContainer.Width = this.Width;
             this.RootContainer.Height = this.Height;
@@ -125,11 +124,7 @@ namespace MediaPlayerPro
                 xamlXmlReaderSettings = new XamlXmlReaderSettings();
                 xamlXmlReaderSettings.LocalAssembly = Assembly.GetExecutingAssembly();
             }
-
-            InitializeTimer();
-            CreateNetworkSyncObject();
-
-            //读取并播放列表文件
+            
             LoadConfig(MEDIA_CONFIG_FILE);
         }
 
@@ -139,7 +134,16 @@ namespace MediaPlayerPro
         /// <param name="fileName"></param>
         public void LoadConfig(String fileName)
         {
-            if (!File.Exists(fileName)) return;
+            if (!File.Exists(fileName))
+            {
+                Log.Error($"配置文件 {MEDIA_CONFIG_FILE} 不存在");
+                if (MessageBox.Show($"配置文件 {MEDIA_CONFIG_FILE} 不存在!{Environment.NewLine}退出程序？", "文件错误", MessageBoxButton.OK, MessageBoxImage.Error, MessageBoxResult.OK) == MessageBoxResult.OK)
+                {
+                    this.Close();
+                    Application.Current.Shutdown(0);
+                }
+                return;
+            }
 
             try
             {
@@ -151,7 +155,6 @@ namespace MediaPlayerPro
                 CompatibleProcess(RootConfiguration);
                 CheckAndUpdateElements(RootConfiguration);
                 XElementExtensions.ReplaceTemplateElements(RootConfiguration, "Template", "RefTemplate", true);
-                Console.WriteLine(RootConfiguration);
             }
             catch (Exception ex)
             {
@@ -162,6 +165,19 @@ namespace MediaPlayerPro
                     Application.Current.Shutdown(0);
                 }
                 return;
+            }
+
+            XElement Settings = RootConfiguration.Element("AppSettings");
+            if(Settings != null)
+            {
+                XElement windowElement = Settings.Element(nameof(Window));
+                if (windowElement != null) InstanceExtensions.SetInstancePropertyValues(this, windowElement);
+
+                XElement timerElement = Settings.Element("Timer");
+                if(timerElement != null) InitializeTimer(timerElement);
+
+                XElement syncElement = Settings.Element("Synchronize");
+                if(syncElement != null) CreateNetworkSyncObject(syncElement);
             }
 
             ItemElements = RootConfiguration.Elements("Item");
@@ -175,6 +191,7 @@ namespace MediaPlayerPro
         /// <param name="id">指定 ID 属性值</param>
         public void LoadItem(int id)
         {
+            if (CurrentItemID == id) return;
             if (ItemElements?.Count() <= 0) return;
             IEnumerable<XElement> items = from item in ItemElements
                                           where item.Attribute("ID")?.Value.Trim() == id.ToString()
@@ -216,10 +233,10 @@ namespace MediaPlayerPro
         {
             if (item == null || !item.HasElements) return;
 
+            stopwatch.Restart();
             CurrentItem = item;
             CurrentItemID = int.TryParse(CurrentItem.Attribute("ID")?.Value, out int value) ? value : int.MinValue;
-            
-            stopwatch.Restart();
+
             try
             {
                 foreach (XElement element in item.Elements())
@@ -297,21 +314,24 @@ namespace MediaPlayerPro
                         ControlInterface.TryParseControlMessage(action, out object returnResult);
                     }
                 }
-
-                Console.WriteLine($"CurrentPlayer: {CurrentPlayer.Name} {CurrentPlayer.Url} {CurrentPlayer.OpenSuccessed}");
-                //CurrentPlayer.Open() And Play()
-                if (CurrentPlayer != null && IsVideoFile(CurrentPlayer.Url))
-                {
-                    if ((CurrentPlayer.AutoOpen || CurrentPlayer.OpenAndPlay) && !CurrentPlayer.OpenSuccessed)
-                        CurrentPlayer.Open(MediaType.Link, null);
-                    else
-                        CurrentPlayer.Play();
-                }
             }
             catch (Exception ex)
             {
                 Log.Error($"配置解析或是执行异常：{ex}");
                 MessageBox.Show($"配置解析或是执行异常：\r\n{ex}", "Error", MessageBoxButton.OK);
+            }
+
+            if (CurrentPlayer != null)
+                Log.Info($"CurrentPlayer Name: {CurrentPlayer.Name}  URL: {CurrentPlayer.Url}  OpenSuccessed: {CurrentPlayer.OpenSuccessed}");
+            else
+                Log.Warn($"CurrentPlayer NULL.");
+
+            if (CurrentPlayer != null && IsVideoFile(CurrentPlayer.Url))
+            {
+                if ((CurrentPlayer.AutoOpen || CurrentPlayer.OpenAndPlay) && !CurrentPlayer.OpenSuccessed)
+                    CurrentPlayer.Open(MediaType.Link, null);
+                else
+                    CurrentPlayer.Play();
             }
 
             stopwatch.Stop();
@@ -440,7 +460,7 @@ namespace MediaPlayerPro
             Button button = (Button)sender;
             Log.Info($"Click Button: {button.Name}  ToolTip: {button.ToolTip}");
 
-            TimerReset();
+            RestartTimer();
             if (!CallButtonEvent(button) && button.ToolTip != null)
             {
                 String[] tips = button.ToolTip.ToString().Split('.');
@@ -489,6 +509,8 @@ namespace MediaPlayerPro
             CurrentPlayer = ForegroundContainer.Visibility == Visibility.Visible && ForegroundPlayer.Visibility == Visibility.Visible ? ForegroundPlayer :
                             CenterContainer.Visibility == Visibility.Visible && CenterPlayer.Visibility == Visibility.Visible ? CenterPlayer :
                             BackgroundContainer.Visibility == Visibility.Visible && BackgroundPlayer.Visibility == Visibility.Visible ? BackgroundPlayer : null;
+
+            Console.WriteLine($"CurrentPlayer::{CurrentPlayer?.Name}");
         }
 
     }

@@ -40,9 +40,7 @@ namespace MediaPlayerPro
             if (Log.IsDebugEnabled)
                 Log.Debug($"WPFSCPlayerPro({player.Name}) First Frame Render Evnet. URL: {player.Url}");
 
-            //if (NetworkSlave != null)  //4字节心跳
-            //    NetworkSlave.Send(SyncMessage, SyncMessage.Length - 4, 4);
-
+            CheckNetworkSyncStatus();
             CallPlayerEvent(player, "OnFirstFrame");
             playerLastTimer[player.Name] = Math.Round(player.CurrentTime / 1000.0f, 2);
         }
@@ -81,9 +79,7 @@ namespace MediaPlayerPro
             if (Log.IsDebugEnabled)
                 Log.Debug($"WPFSCPlayerPro({player.Name}) Stream Finish Event. URL: {player.Url}  ListAutoLoop: {ListAutoLoop}");
 
-            //if (NetworkSlave != null)  //4字节心跳
-            //    NetworkSlave.Send(SyncMessage, SyncMessage.Length - 4, 4);
-
+            CheckNetworkSyncStatus();
             CallPlayerEvent(player, "OnLastFrame");
 
             if (ListAutoLoop) NextNode();

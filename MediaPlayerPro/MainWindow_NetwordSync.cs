@@ -1,27 +1,75 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Linq;
-using System.Text;
+using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Xml.Linq;
 using SpaceCG.Extensions;
-using SpaceCG.Generic;
 using SpaceCG.Net;
 using Sttplay.MediaPlayer;
 
 namespace MediaPlayerPro
 {
+    public enum PlayState:byte
+    {
+        PAUSE,
+        PLAYING,
+        STOP,
+    }
+
+    /// <summary>
+    /// 同步数据信息
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
+    public struct SyncPackData
+    {
+        /// <summary>
+        /// 消息标志符
+        /// </summary>
+        public byte MessageFlags;
+        /// <summary>
+        /// 播放状态
+        /// </summary>
+        public PlayState PlayState;
+        /// <summary>
+        /// 视频当前时间
+        /// </summary>
+        public int CurrentTime;
+        /// <summary>
+        /// 视频持续时间
+        /// </summary>
+        public int DurationTime;
+        /// <summary>
+        /// 时间差值
+        /// </summary>
+        public int Difference;
+        /// <summary>
+        /// 参数，多端同步，可接受的时间误差(ms)
+        /// </summary>
+        public ushort SyncCalibr;
+        /// <summary>
+        /// 参数，多端同步后，等待的帧间隔
+        /// </summary>
+        public ushort SyncWaitFrame;
+        
+        //[MarshalAs(UnmanagedType.ByValArray, SizeConst = 6)]
+        //public byte[] Reserve;
+    }
+
     public partial class MainWindow : Window
     {
         /// <summary>
+        /// 指定的多端同步播放器
+        /// </summary>
+        private WPFSCPlayerPro SyncPlayer = null;
+        /// <summary>
         /// 多端同步，从机对象
         /// </summary>
-        private IAsyncClient NetworkSlave;
+        private IAsyncClient NetworkSlave = null;
         /// <summary>
         /// 多端同步，主机对象
         /// </summary>
-        private IAsyncServer NetworkMaster;
+        private IAsyncServer NetworkMaster = null;
 
         /// <summary>
         /// 多端同步校准误差时间(ms)
@@ -30,85 +78,111 @@ namespace MediaPlayerPro
         /// <summary>
         /// 多端同步后，等待的帧间隔
         /// </summary>
-        private ushort SyncWaitCount = 120;
-        /// <summary>
-        /// 多端同步消息
-        /// </summary>
-        private byte[] SyncMessage = new byte[16];
-        /// <summary>
-        /// 指定的多端同步播放器
-        /// </summary>
-        private WPFSCPlayerPro SyncPlayer = null;
+        private ushort SyncWaitFrame = 120;
+
+        private int SyncPackSize;
+        private string[] SlaveConnectArgs;
+        private readonly byte[] HeartbeatPack = new byte[] { 0x00, 0x00, 0x00, 0x00 };
 
         /// <summary>
         /// 创建网络同步对象
         /// </summary>
-        private void CreateNetworkSyncObject()
+        private void CreateNetworkSyncObject(XElement syncElement)
         {
-            if (!InstanceExtensions.GetInstanceFieldValue(this, ConfigurationManager.AppSettings["Synchronize.Player"], out object player)) return;
+            if (syncElement == null) return;
 
-            if (player.GetType() == typeof(WPFSCPlayerPro))
+            SyncPlayer = null;
+            if (NetworkSlave != null)
             {
-                SyncPlayer = (WPFSCPlayerPro)player;
+                NetworkSlave.Dispose();
+                NetworkSlave = null;
+            }
+            if (NetworkMaster != null)
+            {
+                NetworkMaster.Dispose();
+                NetworkMaster = null;
             }
 
+            //多端同步 播放器对象
+            if (!String.IsNullOrWhiteSpace(syncElement.Attribute("Player")?.Value))
+            {
+                if (!InstanceExtensions.GetInstanceFieldValue(this, syncElement.Attribute("Player").Value, out object player)) return;
+                if (player.GetType() == typeof(WPFSCPlayerPro))
+                {
+                    SyncPlayer = (WPFSCPlayerPro)player;
+                }
+            }
             if (SyncPlayer == null) return;
 
-            //多端同步
-            //NetworkSlave = InstanceExtensions.CreateNetworkClient("Synchronize.Slave", OnUdpSyncClientReceiveEventHandler);
-            //if (NetworkSlave == null)
-            //    NetworkMaster = InstanceExtensions.CreateNetworkServer("Synchronize.Master", OnUdpSyncServerReceiveEventHandler);
+            //多端同步 连接对象
+            if (!String.IsNullOrWhiteSpace(syncElement.Attribute("Slave")?.Value))
+            {
+                SlaveConnectArgs = syncElement.Attribute("Slave").Value.Split(',');
+                if (SlaveConnectArgs.Length >= 2 && ushort.TryParse(SlaveConnectArgs[1], out ushort port) && port > 1024)
+                {
+                    NetworkSlave = new AsyncUdpClient();
+                    NetworkSlave.Connected += NetworkConnection_Connected;
+                    NetworkSlave.DataReceived += NetworkSlave_DataReceived;
+                    NetworkSlave.Disconnected += NetworkConnection_Disconnected;
+                    NetworkSlave.Connect(SlaveConnectArgs[0], port);
+                }
+            }
+            if (NetworkSlave == null && !String.IsNullOrWhiteSpace(syncElement.Attribute("Master")?.Value))
+            {
+                if (ushort.TryParse(syncElement.Attribute("Master").Value, out ushort listenPort) && listenPort > 1024)
+                {
+                    NetworkMaster = new AsyncUdpServer(listenPort);
+                    NetworkMaster.ClientConnected += NetworkConnection_Connected;
+                    NetworkMaster.ClientDataReceived += NetworkMaster_ClientDataReceived;
+                    NetworkMaster.ClientDisconnected += NetworkConnection_Disconnected;
+                }
+            }
 
-            if (NetworkMaster != null && ushort.TryParse(ConfigurationManager.AppSettings["Synchronize.Calibr"], out ushort calibr)) SyncCalibr = calibr;
-            if (NetworkMaster != null && ushort.TryParse(ConfigurationManager.AppSettings["Synchronize.WaitCount"], out ushort waitCount)) SyncWaitCount = waitCount;
+            SyncPackSize = Marshal.SizeOf(typeof(SyncPackData));
             if (NetworkSlave != null && SyncPlayer != null) SyncPlayer.Volume = 0.0f;
+            if (ushort.TryParse(syncElement.Attribute("Calibr")?.Value, out ushort calibr)) SyncCalibr = calibr;
+            if (ushort.TryParse(syncElement.Attribute("WaitFrame")?.Value, out ushort waitFrame)) SyncWaitFrame = waitFrame;
         }
 
-        private void CheckNetworkSyncStatus()
+        private void NetworkConnection_Connected(object sender, AsyncEventArgs e)
         {
-            if (SyncPlayer == null || NetworkMaster == null) return;
+            Log.Info($"{sender}: {e.EndPoint} Connected.");
+        }
+        private void NetworkConnection_Disconnected(object sender, AsyncEventArgs e)
+        {
+            Log.Info($"{sender}: {e.EndPoint} Disconnected.");
 
-            List<IntPtr> clients = null;// NetworkMaster.GetAllConnectionIds();
-            //Console.WriteLine($"clients: {clients.Count()}");
-            if (clients.Count > 0)
+            if (sender.GetType() == typeof(AsyncTcpClient))
             {
-                byte[] ct = BitConverter.GetBytes((int)SyncPlayer.CurrentTime);  //4 Bytes  currentTime
-                Array.Copy(ct, 0, SyncMessage, 0, ct.Length);
-
-                byte[] sc = BitConverter.GetBytes(SyncCalibr);          //2 Bytes   校准误差时间ms
-                Array.Copy(sc, 0, SyncMessage, 4, sc.Length);
-
-                byte[] sw = BitConverter.GetBytes(SyncWaitCount);      //2 Bytes   校准后等待帧数
-                Array.Copy(sc, 0, SyncMessage, 6, sw.Length);
-
-                SyncMessage[8] = (byte)(SyncPlayer.IsPaused ? 0x00 : 0x01);    //1 Bytes 播放状态
-                // ... 
-                //Console.WriteLine(SyncMessage[8]);
-
-                byte[] dt = BitConverter.GetBytes((int)SyncPlayer.Duration);        //4 Bytes  视频的持续时长
-                Array.Copy(dt, 0, SyncMessage, SyncMessage.Length - dt.Length, dt.Length);
-
-                //foreach (IntPtr client in clients)
-                //    NetworkMaster.Send(client, SyncMessage, SyncMessage.Length);
+                Task.Run(() =>
+                {
+                    Thread.Sleep(2000);
+                    NetworkSlave?.Connect(SlaveConnectArgs[0], ushort.Parse(SlaveConnectArgs[1]));
+                });
             }
         }
-#if false
-        private HandleResult OnUdpSyncClientReceiveEventHandler(IClient sender, byte[] data)
+        private void NetworkMaster_ClientDataReceived(object sender, AsyncDataEventArgs e)
         {
-            if (SyncPlayer == null || NetworkMaster != null || data.Length != SyncMessage.Length) return HandleResult.Ok;
+            if (SyncPlayer == null || NetworkMaster != null || e.Bytes.Length != SyncPackSize) return;
 
-            int ct = BitConverter.ToInt32(data, 0);         //4 Bytes  currentTime
-            ushort sc = BitConverter.ToUInt16(data, 4);     //2 Bytes   校准后等待帧数
-            ushort sw = BitConverter.ToUInt16(data, 6);     //2 Bytes   校准后等待帧数
-            byte status = data[8];                          //1 Bytes   播放状态
-                                                            // ...
-            int dt = BitConverter.ToInt32(data, data.Length - 4);   //4 Bytes  视频的持续时长
+            //处理响应信息
+            if (e.Bytes[0] == 0x01)    //消息类型
+            {
+                SyncPackData slavePack = BytesToStruct(e.Bytes, SyncPackSize);
+                Log.Info($"远程主机(Slave) {e.EndPoint} 校准时间，时间差：{slavePack.Difference} ms");
+                Log.Info($"Current(Master)Video: {SyncPlayer.CurrentTime}/{SyncPlayer.Duration}    SlaveVideo: {slavePack.CurrentTime}/{slavePack.DurationTime}    时间差: {slavePack.Difference}ms");
+            }
+        }
+        private void NetworkSlave_DataReceived(object sender, AsyncDataEventArgs e)
+        {
+            if (SyncPlayer == null || NetworkMaster != null || e.Bytes.Length != SyncPackSize) return;
 
-            if (status == 0x00)
+            SyncPackData masterPack = BytesToStruct(e.Bytes, SyncPackSize);
+            if (masterPack.PlayState == PlayState.PAUSE)
             {
                 if (!SyncPlayer.IsPaused) SyncPlayer.Pause();
             }
-            if (status == 0x01)
+            else if (masterPack.PlayState == PlayState.PLAYING)
             {
                 if (SyncPlayer.IsPaused) SyncPlayer.Play();
             }
@@ -117,53 +191,107 @@ namespace MediaPlayerPro
                 // ...
             }
 
-            int DT = (int)SyncPlayer.Duration;
-            int CT = (int)SyncPlayer.CurrentTime;
-            int Diff = (int)Math.Abs(CT - ct);
+            if (SyncWaitFrame != 0)
+            {
+                SyncWaitFrame--;
+                return;
+            }
 
-            if (SyncWaitCount != 0)
+            if (masterPack.PlayState != PlayState.PLAYING) return;
+            if (masterPack.CurrentTime == 0 || SyncPlayer.CurrentTime == 0 || SyncPlayer.Duration == 0) return;
+
+            int diff = (int)Math.Abs(SyncPlayer.CurrentTime - masterPack.CurrentTime);
+            if (diff > masterPack.SyncCalibr)
             {
-                SyncWaitCount--;
-                return HandleResult.Ok;
-            }            
-            if (Diff > sc && ct != 0 && CT != 0 && !SyncPlayer.IsPaused)
-            {
-                SyncWaitCount = sw;
-                this.Dispatcher.Invoke(() => SyncPlayer.SeekFastMilliSecond(ct + 4));
+                SyncWaitFrame = masterPack.SyncWaitFrame;
+                this.Dispatcher.Invoke(() => SyncPlayer.SeekFastMilliSecond(masterPack.CurrentTime + 4));
+
+                Log.Info($"远程主机地址 {e.EndPoint} ，校准时间时间差：{diff} ms");
+                Log.Info($"Current(Slave)Video: {SyncPlayer.CurrentTime}/{SyncPlayer.Duration}    MasterVideo: {masterPack.CurrentTime}/{masterPack.DurationTime}    时间差: {diff}ms");
 
                 //响应信息
-                SyncMessage[0] = 0x01;  //消息类型
-                //SyncMessage[1] = (byte)(SyncPlayer.IsPaused ? 0x00 : 0x01);
-                Array.Copy(BitConverter.GetBytes(Diff), 0, SyncMessage, 2, 4);      //4 Bytes 时间差值
-                Array.Copy(BitConverter.GetBytes((int)CT), 0, SyncMessage, 6, 4);   //4 Bytes CurrentTime
-                Array.Copy(BitConverter.GetBytes((int)DT), 0, SyncMessage, SyncMessage.Length - 4, 4);  //4 Bytes Duration
-                NetworkSlave.Send(SyncMessage, SyncMessage.Length);
+                masterPack.MessageFlags = 0x01;   //消息类型
+                masterPack.Difference = diff;
+                masterPack.CurrentTime = (int)SyncPlayer.CurrentTime;
+                masterPack.DurationTime = (int)SyncPlayer.Duration;
 
-                NetworkSlave.GetRemoteHost(out string host, out ushort port);
-                Log.Info($"远程主机地址 {host}:{port} ，校准时间时间差：{Diff} ms");
-                Log.Info($"Current(Slave)Video: {CT}/{DT}    MasterVideo: {ct}/{dt}    时间差: {Diff}ms");
+                byte[] data = StructToBytes(masterPack, SyncPackSize);
+                NetworkSlave.SendBytes(data);
             }
-
-            return HandleResult.Ok;
         }
 
-        private HandleResult OnUdpSyncServerReceiveEventHandler(IServer sender, IntPtr connId, byte[] data)
+        /// <summary>
+        /// 检查网络同步状态
+        /// </summary>
+        protected void CheckNetworkSyncStatus()
         {
-            if (SyncPlayer == null || NetworkSlave != null || data.Length != SyncMessage.Length) return HandleResult.Ok;
+            if (SyncPlayer == null) return;
 
-            NetworkMaster.GetRemoteAddress(connId, out String ip, out ushort port);
-            //处理响应信息
-            if (data[0] == 0x01)    //消息类型
+            if(NetworkSlave != null)
             {
-                int diff = BitConverter.ToInt32(data, 2);       //4 Bytes 时间差值
-                int ct = BitConverter.ToInt32(data, 6);         //4 Bytes CurrentTime
-                int dt = BitConverter.ToInt32(data, data.Length - 4);   //4 Bytes Duration
-                Log.Info($"远程主机(Slave) {ip}:{port} 校准时间，时间差：{diff}ms");
-                Log.Info($"Current(Master)Video: {SyncPlayer.CurrentTime}/{SyncPlayer.Duration}    SlaveVideo: {ct}/{dt}    时间差: {diff}ms");
+                NetworkSlave.SendBytes(HeartbeatPack);
+                return;
             }
 
-            return HandleResult.Ok;
+            if (NetworkMaster != null && NetworkMaster.ClientCount > 0)
+            {
+                SyncPackData masterPack = new SyncPackData();
+                masterPack.MessageFlags = 0x00;
+                masterPack.Difference = 0;
+                masterPack.CurrentTime = (int)SyncPlayer.CurrentTime;
+                masterPack.DurationTime = (int)SyncPlayer.Duration;
+                masterPack.SyncCalibr = SyncCalibr;
+                masterPack.SyncWaitFrame = SyncWaitFrame;
+                masterPack.PlayState = SyncPlayer.IsPaused ? PlayState.PAUSE : PlayState.PLAYING;
+
+                byte[] data = StructToBytes(masterPack, SyncPackSize);
+                foreach (var client in NetworkMaster.Clients) NetworkMaster.SendBytes(data, client);
+            }
         }
-#endif
+
+
+        /// <summary>
+        /// 结构体转化成byte[]
+        /// </summary>
+        /// <param name="structure"></param>
+        /// <returns></returns>
+        public static Byte[] StructToBytes(SyncPackData structure, int size)
+        {
+            //Int32 size = Marshal.SizeOf(structure);
+            IntPtr buffer = Marshal.AllocHGlobal(size);
+            try
+            {
+                Marshal.StructureToPtr<SyncPackData>(structure, buffer, false);
+                Byte[] bytes = new Byte[size];
+                Marshal.Copy(buffer, bytes, 0, size);
+
+                return bytes;
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(buffer);
+            }
+        }
+        /// <summary>
+        /// byte[]转化成结构体
+        /// </summary>
+        /// <param name="bytes"></param>
+        /// <returns></returns>
+        public static SyncPackData BytesToStruct(Byte[] bytes, int size)
+        {
+            //Int32 size = Marshal.SizeOf(typeof(T));
+            IntPtr buffer = Marshal.AllocHGlobal(size);
+
+            try
+            {
+                Marshal.Copy(bytes, 0, buffer, size);
+                return Marshal.PtrToStructure<SyncPackData>(buffer);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(buffer);
+            }
+        }
     }
+
 }
