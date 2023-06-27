@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Windows;
-using System.Windows.Media.Imaging;
 using Sttplay.MediaPlayer;
 
 namespace MediaPlayerPro
@@ -18,17 +17,13 @@ namespace MediaPlayerPro
             {
                 var fileName = ((Array)e.Data.GetData(DataFormats.FileDrop)).GetValue(0).ToString();
 
-                if (IsVideoFile(ForegroundPlayer.Url)) ForegroundPlayer.Close();
-                ForegroundPlayer.Visibility = Visibility.Visible;
-                ForegroundContainer.Visibility = Visibility.Visible;
+                if (MainWindowExtensions.IsVideoFile(fileName) || MainWindowExtensions.IsImageFile(fileName))
+                {
+                    ForegroundPlayer.Close();
+                    ForegroundPlayer.Visibility = Visibility.Visible;
+                    ForegroundContainer.Visibility = Visibility.Visible;
 
-                if (IsVideoFile(fileName))
-                {
                     ForegroundPlayer.Open(MediaType.Link, fileName);
-                }
-                else if (IsImageFile(fileName))
-                {
-                    ForegroundPlayer.Source = new BitmapImage(new Uri(fileName, UriKind.RelativeOrAbsolute));
                 }
                 else
                 {
@@ -42,7 +37,7 @@ namespace MediaPlayerPro
                 return;
             }
 
-            CenterContainer.Visibility = Visibility.Hidden;
+            MiddleContainer.Visibility = Visibility.Hidden;
             BackgroundContainer.Visibility = Visibility.Hidden;
         }
     }

@@ -14,6 +14,8 @@ using System.Xaml;
 using SpaceCG.Generic;
 using SpaceCG.Extensions;
 using System.Threading;
+using System.Configuration;
+using System.Windows.Media;
 
 namespace MediaPlayerPro
 {
@@ -25,26 +27,28 @@ namespace MediaPlayerPro
         public static readonly LoggerTrace Log = new LoggerTrace(nameof(MainWindow));
         private readonly string MEDIA_CONFIG_FILE = "MediaContents.Config";
 
+        internal const string XAction = "Action";
+        internal const string XEvents = "Events";
+
         internal const string FOREGROUND = "Foreground";
         internal const string BACKGROUND = "Background";
-        internal const string CENTER = "Center";
+        internal const string MIDDLE = "Middle";
         internal const string PLAYER = "Player";
         internal const string BUTTON = "Button";
         internal const string BUTTONS = "Buttons";
         internal const string CONTAINER = "Container";
 
         /// <summary> 元素名称 </summary>
-        private static List<String> FrameworkElements = new List<String>();
+        internal static List<String> FrameworkElements = new List<String>();
         /// <summary> 元素禁用属性 </summary>
-        private static List<String> DisableAttributes = new List<string>() { "Name", "Content" };
-
+        internal static List<String> DisableAttributes = new List<string>() { "Name", "Content" };
 
         private XElement RootConfiguration = null;
         private IEnumerable<XElement> ItemElements;
-        private XElement CurrentItem = null;
-        private int CurrentItemID = int.MinValue;
-
         public Boolean ListAutoLoop { get; set; } = false;
+        public XElement AppSettings { get; private set; } = null;
+        public XElement CurrentItem { get; private set; } = null;
+        public int CurrentItemID { get; private set; } = int.MinValue;
 
         private Process ProcessModule;
         private MainWindow Window;
@@ -55,21 +59,21 @@ namespace MediaPlayerPro
         /// <summary> 控制接口 </summary>
         private ControlInterface ControlInterface;
 
-        XmlParserContext xmlParserContext;
-        XmlReaderSettings xmlReaderSettings;
-        XamlXmlReaderSettings xamlXmlReaderSettings;
+        private XmlParserContext xmlParserContext;
+        private XmlReaderSettings xmlReaderSettings;
+        private XamlXmlReaderSettings xamlXmlReaderSettings;
         private Stopwatch stopwatch = new Stopwatch();
 
         public MainWindow()
         {
             InitializeComponent();
-            SetInstancePropertyValues(this, "Window.");
-            //this.Title = "Meida Player Pro " + (!String.IsNullOrWhiteSpace(this.Title) ? $"({this.Title})" : "");
+            MainWindowExtensions.SetInstancePropertyValues(this, "Window.");
+            ushort localPort = ushort.TryParse(ConfigurationManager.AppSettings["Interface.LocalPort"], out ushort port) ? port : (ushort)2023;
 
             this.Window = this;
             this.Title = "Meida Player Pro v1.0.20230620"; 
             LoggerWindow = new LoggerWindow();
-            ControlInterface = new ControlInterface(2023);
+            ControlInterface = new ControlInterface(localPort);
             ControlInterface.AccessObjects.Add("Window", this.Window);
             InstanceExtensions.ConvertChangeTypeExtension = ConvertChangeTypeExtension;
 
@@ -128,8 +132,9 @@ namespace MediaPlayerPro
                 xamlXmlReaderSettings = new XamlXmlReaderSettings();
                 xamlXmlReaderSettings.LocalAssembly = Assembly.GetExecutingAssembly();
             }
-            
+
             LoadConfig(MEDIA_CONFIG_FILE);
+            ProcessModule = MainWindowExtensions.CreateProcessModule("Process.FileName");
         }
 
         /// <summary>
@@ -156,8 +161,8 @@ namespace MediaPlayerPro
                     RootConfiguration = XElement.Load(reader, LoadOptions.None);
                 }
 
-                CompatibleProcess(RootConfiguration);
-                CheckAndUpdateElements(RootConfiguration);
+                MainWindowExtensions.CompatibleProcess(RootConfiguration);
+                MainWindowExtensions.CheckAndUpdateElements(RootConfiguration);
                 XElementExtensions.ReplaceTemplateElements(RootConfiguration, "Template", "RefTemplate", true);
             }
             catch (Exception ex)
@@ -171,17 +176,14 @@ namespace MediaPlayerPro
                 return;
             }
 
-            XElement Settings = RootConfiguration.Element("AppSettings");
-            if(Settings != null)
+            AppSettings = RootConfiguration.Element("AppSettings");
+            if(AppSettings != null)
             {
-                XElement windowElement = Settings.Element(nameof(Window));
-                if (windowElement != null) InstanceExtensions.SetInstancePropertyValues(this, windowElement);
-
-                XElement timerElement = Settings.Element("Timer");
+                XElement timerElement = AppSettings.Element("Timer");
                 if(timerElement != null) InitializeTimer(timerElement);
 
-                XElement syncElement = Settings.Element("Synchronize");
-                if(syncElement != null) CreateNetworkSyncObject(syncElement);
+                XElement syncElement = AppSettings.Element("Synchronize");
+                if(syncElement != null) InitializeNetworkSync(syncElement);
             }
 
             ItemElements = RootConfiguration.Elements("Item");
@@ -189,45 +191,6 @@ namespace MediaPlayerPro
             if (int.TryParse(RootConfiguration.Attribute("DefaultID")?.Value, out int id)) LoadItem(id);
         }
 
-        /// <summary>
-        /// 加载指定项的内容
-        /// </summary>
-        /// <param name="id">指定 ID 属性值</param>
-        public void LoadItem(int id)
-        {
-            if (CurrentItemID == id) return;
-            if (ItemElements?.Count() <= 0) return;
-            IEnumerable<XElement> items = from item in ItemElements
-                                          where item.Attribute("ID")?.Value.Trim() == id.ToString()
-                                          select item;
-            if (items?.Count() != 1)
-            {
-                Log.Warn($"配置项列表中不存在指定的 ID: {id} 项");
-                return;
-            }
-
-            Log.Info($"Ready Load Item ID: {id}");
-            LoadItem(items.First());
-        }
-        /// <summary>
-        /// 加载指定项的内容
-        /// </summary>
-        /// <param name="name">指定 Name 属性值</param>
-        public void LoadItem(string name)
-        {
-            if (ItemElements?.Count() <= 0) return;
-            IEnumerable<XElement> items = from item in ItemElements
-                                          where item.Attribute("Name")?.Value.Trim() == name
-                                          select item;
-            if (items?.Count() != 1)
-            {
-                Log.Warn($"配置项列表中不存在指定的 Name: {name} 项");
-                return;
-            }
-
-            Log.Info($"Ready Load Item Name: {name}");
-            LoadItem(items.First());
-        }
         /// <summary>
         /// 加载指定项内容
         /// <para>XAML 解析参考：https://www.codenong.com/54797577/ </para>
@@ -245,7 +208,7 @@ namespace MediaPlayerPro
             {
                 foreach (XElement element in item.Elements())
                 {
-                    if (element.Name.LocalName == "Action")
+                    if (element.Name.LocalName == XAction)
                     {
                         ControlInterface.TryParseControlMessage(element, out object returnResult);
                         continue;
@@ -278,7 +241,7 @@ namespace MediaPlayerPro
                             WPFSCPlayerPro WPFPlayer = (WPFSCPlayerPro)uiElement;
                             Console.WriteLine($"{WPFPlayer.Name} Source: {WPFPlayer.Source}  Url: {WPFPlayer.Url}");
 
-                            if (IsVideoFile(WPFPlayer.Url)) WPFPlayer.Close();
+                            if (MainWindowExtensions.IsVideoFile(WPFPlayer.Url)) WPFPlayer.Close();
                             WPFPlayer.Source = null;
                         }
 
@@ -313,7 +276,7 @@ namespace MediaPlayerPro
                     }
 
                     //Sub Element Actions
-                    foreach (XElement action in element?.Elements("Action"))
+                    foreach (XElement action in element?.Elements(XAction))
                     {
                         ControlInterface.TryParseControlMessage(action, out object returnResult);
                     }
@@ -325,12 +288,7 @@ namespace MediaPlayerPro
                 MessageBox.Show($"配置解析或是执行异常：\r\n{ex}", "Error", MessageBoxButton.OK);
             }
 
-            if (CurrentPlayer != null)
-                Log.Info($"CurrentPlayer Name: {CurrentPlayer.Name}  URL: {CurrentPlayer.Url}  OpenSuccessed: {CurrentPlayer.OpenSuccessed}");
-            else
-                Log.Warn($"CurrentPlayer NULL.");
-
-            if (CurrentPlayer != null && IsVideoFile(CurrentPlayer.Url))
+            if (CurrentPlayer != null && MainWindowExtensions.IsVideoFile(CurrentPlayer.Url))
             {
                 if ((CurrentPlayer.AutoOpen || CurrentPlayer.OpenAndPlay) && !CurrentPlayer.OpenSuccessed)
                     CurrentPlayer.Open(MediaType.Link, null);
@@ -340,47 +298,15 @@ namespace MediaPlayerPro
 
             stopwatch.Stop();
             Log.Info($"Load And Analyse Item XElement use {stopwatch.ElapsedMilliseconds} ms");
+
+            if (CurrentPlayer != null)
+                Log.Info($"CurrentPlayer Name: {CurrentPlayer.Name}  URL: {CurrentPlayer.Url}  OpenSuccessed: {CurrentPlayer.OpenSuccessed}");
+            else
+                Log.Warn($"CurrentPlayer is NULL.");
+
             GC.Collect();
         }
 
-        /// <summary>
-        /// 执行配置事件
-        /// </summary>
-        /// <param name="eventName"></param>
-        /// <param name="currentTime"></param>
-        /// <param name="lastTime"></param>
-        protected void CallPlayerEvent(WPFSCPlayerPro player, String eventName, double currentTime = -1.0f, double lastTime = -1.0f)
-        {
-            IEnumerable<XElement> events = from evs in CurrentItem?.Element(player.Name)?.Elements("Events")
-                                           where evs.Attribute("Name")?.Value == eventName
-                                           select evs;
-
-            if (events?.Count() == 0) return;
-
-            foreach (XElement element in events.Elements())
-            {
-                if (currentTime >= 0 && lastTime >= 0)
-                {
-                    if (string.IsNullOrWhiteSpace(element.Parent.Attribute("Position")?.Value)) continue;
-                    if (!double.TryParse(element.Parent.Attribute("Position").Value, out double position)) continue;
-
-                    if (!(position <= currentTime && position > lastTime)) continue;
-
-                    if (Log.IsDebugEnabled)
-                        Log.Debug($"Render Frame Evnet CurrentTimer: {currentTime}");
-                }
-
-                if (element.Name.LocalName == "Action")
-                {
-                    ControlInterface.TryParseControlMessage(element, out object returnResult);
-                }
-                else
-                {
-                    InstanceExtensions.SetInstancePropertyValues(this, element);
-                }
-            }
-        }
-        
         /// <summary>
         /// 调用 指定项 => 指定按扭容器 => 指定的按扭 => 事件或属性
         /// </summary>
@@ -393,7 +319,7 @@ namespace MediaPlayerPro
             IEnumerable<XElement> events = from item in ItemElements
                                            where item.Attribute("ID")?.Value.Trim() == itemID.ToString()
                                            from container in item.Elements(buttonContainer)
-                                           from evt in container.Elements("Events")
+                                           from evt in container.Elements(XEvents)
                                            where evt.Attribute("Name")?.Value.Trim() == "Click" && evt.Attribute("Button")?.Value.Trim() == buttonName
                                            select evt;
 
@@ -401,7 +327,7 @@ namespace MediaPlayerPro
 
             foreach (XElement element in events.Elements())
             {
-                if (element.Name.LocalName == "Action")
+                if (element.Name.LocalName == XAction)
                 {
                     ControlInterface.TryParseControlMessage(element, out object returnResult);
                 }
@@ -427,7 +353,7 @@ namespace MediaPlayerPro
         public void CallButtonEvent(string buttonName)
         {
             var btnContainer = ForegroundContainer.Visibility == Visibility.Visible && ForegroundButtons.Visibility == Visibility.Visible ? ForegroundButtons :
-                               CenterContainer.Visibility == Visibility.Visible && CenterButtons.Visibility == Visibility.Visible ? CenterButtons :
+                               MiddleContainer.Visibility == Visibility.Visible && MiddleButtons.Visibility == Visibility.Visible ? MiddleButtons :
                                BackgroundContainer.Visibility == Visibility.Visible && BackgroundButtons.Visibility == Visibility.Visible ? BackgroundButtons : null;
 
             CallButtonEvent(CurrentItemID, btnContainer.Name, buttonName);
@@ -441,52 +367,42 @@ namespace MediaPlayerPro
             XElement buttonElements = (button.Parent as FrameworkElement)?.ToolTip as XElement;
             if (buttonElements == null) return false;
 
-            IEnumerable<XElement> events = from evs in buttonElements.Elements("Events")
+            IEnumerable<XElement> events = from evs in buttonElements.Elements(XEvents)
                                            where evs.Attribute("Name")?.Value == "Click" && evs.Attribute("Button")?.Value == button.Name
                                            select evs;
             if (events?.Count() <= 0) return false;
 
             foreach (XElement element in events?.Elements())
             {
-                Console.WriteLine(element);
-
-                if (element.Name.LocalName == "Action")
-                {
+                if (element.Name.LocalName == XAction)
                     ControlInterface.TryParseControlMessage(element, out object returnResult);
-                }
                 else
-                {
-                    Console.WriteLine($"0000>>{BackgroundPlayer.Volume} {BackgroundPlayer.Url} {BackgroundPlayer.AutoOpen} {BackgroundPlayer.OpenAndPlay}");
                     InstanceExtensions.SetInstancePropertyValues(this, element);
-                    Console.WriteLine($"1111>>{BackgroundPlayer.Volume} {BackgroundPlayer.Url} {BackgroundPlayer.AutoOpen} {BackgroundPlayer.OpenAndPlay}");
-                }
-
-                Thread.Sleep(100);
             }
             return true;
         }
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            e.Handled = true;
             Button button = (Button)sender;
             Log.Info($"Click Button: {button.Name}  ToolTip: {button.ToolTip}");
 
-            RestartTimer();
             if (!CallButtonEvent(button) && button.ToolTip != null)
             {
                 String[] tips = button.ToolTip.ToString().Split('.');
                 CallButtonEvent(int.Parse(tips[0]), tips[1], tips[2]);
-            }
+            }            
         }
-        private void WPFSCPlayerPro_MouseDown(object sender, MouseButtonEventArgs e)
+        private void UIElement_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            WPFSCPlayerPro player = (WPFSCPlayerPro)sender;
+            Console.WriteLine(e.Source);
+            Console.WriteLine(e.OriginalSource);
 
-            if (!IsVideoFile(player.Url)) return;
-
-            if (player.IsPaused)
-                player.Play();
-            else
-                player.Pause();
+            if (e.ChangedButton == MouseButton.Left && e.ClickCount == 2)
+            {
+                this.PlayPause();
+                e.Handled = true;
+            }
         }
         private void UIElement_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
@@ -517,10 +433,43 @@ namespace MediaPlayerPro
             }
 
             CurrentPlayer = ForegroundContainer.Visibility == Visibility.Visible && ForegroundPlayer.Visibility == Visibility.Visible ? ForegroundPlayer :
-                            CenterContainer.Visibility == Visibility.Visible && CenterPlayer.Visibility == Visibility.Visible ? CenterPlayer :
+                            MiddleContainer.Visibility == Visibility.Visible && MiddlePlayer.Visibility == Visibility.Visible ? MiddlePlayer :
                             BackgroundContainer.Visibility == Visibility.Visible && BackgroundPlayer.Visibility == Visibility.Visible ? BackgroundPlayer : null;
+        }
 
-            Console.WriteLine($"CurrentPlayer::{CurrentPlayer?.Name}");
+        /// <summary>
+        /// 扩展类型转换
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="conversionType"></param>
+        /// <param name="conversionValue"></param>
+        /// <returns></returns>
+        public static bool ConvertChangeTypeExtension(object value, Type conversionType, out object conversionValue)
+        {
+            Console.WriteLine($">>>{value}");
+            conversionValue = null;
+            if (conversionType == null) return false;
+
+            if (value == null) return true;
+            if (value.GetType() == typeof(string))
+            {
+                string sValue = value.ToString();
+                if (String.IsNullOrWhiteSpace(sValue) || sValue.ToLower().Trim() == "null") return true;
+                
+                if (sValue.IndexOf('#') == 0 && conversionType == typeof(Brush))
+                {
+                    Color color = (Color)ColorConverter.ConvertFromString(sValue);
+                    conversionValue = new SolidColorBrush(color);
+                    return true;
+                }
+            }
+            else
+            {
+
+            }
+
+
+            return false;
         }
 
     }

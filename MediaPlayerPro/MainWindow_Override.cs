@@ -24,7 +24,7 @@ namespace MediaPlayerPro
                 }
             }
 
-            InstanceExtensions.RemoveInstanceEvents(CenterPlayer);
+            InstanceExtensions.RemoveInstanceEvents(MiddlePlayer);
             InstanceExtensions.RemoveInstanceEvents(ForegroundPlayer);
             InstanceExtensions.RemoveInstanceEvents(BackgroundPlayer);
 
@@ -33,7 +33,13 @@ namespace MediaPlayerPro
             LoggerWindow?.Close();
             ControlInterface?.Dispose();
 
-            DisposeProcessModule(ref ProcessModule);
+            NetworkSlave?.Dispose();
+            NetworkMaster?.Dispose();
+
+            SyncPlayer = null;
+            CurrentPlayer = null;
+
+            MainWindowExtensions.DisposeProcessModule(ref ProcessModule);
         }
         /// <inheritdoc/>
         protected override void OnClosed(EventArgs e)
@@ -41,9 +47,9 @@ namespace MediaPlayerPro
             base.OnClosed(e);
             Console.WriteLine("Closed ... ");
 
-            if (IsVideoFile(CenterPlayer?.Url)) CenterPlayer.ReleaseCore();
-            if (IsVideoFile(ForegroundPlayer?.Url)) ForegroundPlayer.ReleaseCore();
-            if (IsVideoFile(BackgroundPlayer?.Url)) BackgroundPlayer.ReleaseCore();
+            MiddlePlayer?.ReleaseCore();
+            ForegroundPlayer?.ReleaseCore();
+            BackgroundPlayer?.ReleaseCore();
         }
 
         /// <inheritdoc/>
@@ -108,6 +114,18 @@ namespace MediaPlayerPro
                     PrevNode();
                     break;
 
+                case Key.PageDown:
+                    break;
+
+                case Key.PageUp:
+                    break;
+
+                case Key.VolumeUp: this.VolumeUp(); break;
+                case Key.VolumeDown: this.VolumeDown(); break;
+                case Key.Play: this.Play();  break;
+                case Key.Pause: this.Pause(); break;                    
+                case Key.MediaPlayPause: PlayPause(); break;
+
                 case Key.Space:
                 case Key.Enter:
                     PlayPause();
@@ -123,9 +141,8 @@ namespace MediaPlayerPro
         /// <inheritdoc/>
         protected override void OnPreviewMouseDown(MouseButtonEventArgs e)
         {
-            base.OnPreviewMouseDown(e);
-
             RestartTimer();
+            base.OnPreviewMouseDown(e);
             if (Log.IsDebugEnabled) Log.Debug($"On Preview Mouse Down");
         }
 

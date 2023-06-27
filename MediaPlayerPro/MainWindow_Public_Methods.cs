@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Xml.Linq;
 
@@ -10,6 +8,46 @@ namespace MediaPlayerPro
 {
     public partial class MainWindow : Window
     {
+        /// <summary>
+        /// 加载指定项的内容
+        /// </summary>
+        /// <param name="id">指定 ID 属性值</param>
+        public void LoadItem(int id)
+        {
+            if (CurrentItemID == id) return;
+            if (ItemElements?.Count() <= 0) return;
+            IEnumerable<XElement> items = from item in ItemElements
+                                          where item.Attribute("ID")?.Value.Trim() == id.ToString()
+                                          select item;
+            if (items?.Count() != 1)
+            {
+                Log.Warn($"配置项列表中不存在指定的 ID: {id} 项");
+                return;
+            }
+
+            Log.Info($"Ready Load Item ID: {id}");
+            LoadItem(items.First());
+        }
+        /// <summary>
+        /// 加载指定项的内容
+        /// </summary>
+        /// <param name="name">指定 Name 属性值</param>
+        public void LoadItem(string name)
+        {
+            if (ItemElements?.Count() <= 0) return;
+            IEnumerable<XElement> items = from item in ItemElements
+                                          where item.Attribute("Name")?.Value.Trim() == name
+                                          select item;
+            if (items?.Count() != 1)
+            {
+                Log.Warn($"配置项列表中不存在指定的 Name: {name} 项");
+                return;
+            }
+
+            Log.Info($"Ready Load Item Name: {name}");
+            LoadItem(items.First());
+        }
+
         /// <summary>
         /// 设置列表循环
         /// </summary>
@@ -25,11 +63,10 @@ namespace MediaPlayerPro
         /// <param name="volume"></param>
         public void SetVolume(float volume)
         {
-            CenterPlayer.Volume = volume;
+            MiddlePlayer.Volume = volume;
             BackgroundPlayer.Volume = volume;
             ForegroundPlayer.Volume = volume;
         }
-
         /// <summary>
         /// 音量增加 10%
         /// </summary>
@@ -38,7 +75,7 @@ namespace MediaPlayerPro
             float volume = CurrentPlayer.Volume;
             volume = volume + 0.1f >= 1.0f ? 1.0f : volume + 0.1f;
 
-            CenterPlayer.Volume = volume;
+            MiddlePlayer.Volume = volume;
             BackgroundPlayer.Volume = volume;
             ForegroundPlayer.Volume = volume;
         }
@@ -50,7 +87,7 @@ namespace MediaPlayerPro
             float volume = CurrentPlayer.Volume;
             volume = volume - 0.1f <= 0.0f ? 0.0f : volume - 0.1f;
 
-            CenterPlayer.Volume = volume;
+            MiddlePlayer.Volume = volume;
             BackgroundPlayer.Volume = volume;
             ForegroundPlayer.Volume = volume;
         }
@@ -147,31 +184,30 @@ namespace MediaPlayerPro
             else
                 LoadItem((XElement)CurrentItem.Parent.LastNode);
         }
+
         /// <summary>
         /// 播放暂停当前视频
         /// </summary>
         public void PlayPause()
         {
-            if (CurrentPlayer == null) return;
+            if (CurrentPlayer == null || !MainWindowExtensions.IsVideoFile(CurrentPlayer.Url)) return;
             if (CurrentPlayer.IsPaused) CurrentPlayer.Play();
             else CurrentPlayer.Pause();
         }
-
         /// <summary>
         /// 播放当前视频
         /// </summary>
         public void Play()
         {
-            if (CurrentPlayer == null) return;
+            if (CurrentPlayer == null || !MainWindowExtensions.IsVideoFile(CurrentPlayer.Url)) return;
             if (CurrentPlayer.IsPaused) CurrentPlayer.Play();
         }
-
         /// <summary>
         /// 暂停当前视频
         /// </summary>
         public void Pause()
         {
-            if (CurrentPlayer == null) return;
+            if (CurrentPlayer == null || !MainWindowExtensions.IsVideoFile(CurrentPlayer.Url)) return;
             CurrentPlayer.Pause();
         }
 

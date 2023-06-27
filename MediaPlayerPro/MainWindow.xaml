@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:MediaPlayerPro" 
         xmlns:sttplay="clr-namespace:Sttplay.MediaPlayer;assembly=Sttplay.MediaPlayer"
         mc:Ignorable="d" Title="Media Player Pro"
-        Height="720" Width="1280" Background="#00FFFFFF" 
+        Height="720" Width="1280" Background="#FF000000" 
         Loaded="Window_Loaded" DragDrop.Drop="Window_Drop">
     <Window.Resources>
         <Style TargetType="Button">
@@ -22,7 +22,7 @@
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="Background" Value="#640000FF"/>
             <Setter Property="Foreground" Value="#6400FF00"/>
-            <Setter Property="ToolTipService.IsEnabled" Value="True"/>
+            <Setter Property="ToolTipService.IsEnabled" Value="False"/>
             <EventSetter Event="Click" Handler="Button_Click"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -67,20 +67,18 @@
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="HorizontalAlignment" Value="Center"/>
             <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality"/>
-            <EventSetter Event="Mouse.MouseDown" Handler="WPFSCPlayerPro_MouseDown"/>
         </Style>
 
     </Window.Resources>
     <Viewbox Name="ViewboxContainer" Stretch="Uniform" ClipToBounds="True" Focusable="False">
 
-        <Grid Name="RootContainer" Focusable="False" Width="1280" Height="720" >
+        <Grid Name="RootContainer" Focusable="False" Width="1280" Height="720" Background="#FF000000" MouseDown="UIElement_MouseDown" >
             <!-- Background -->
             <Grid x:Name="BackgroundContainer" Visibility="Visible" Background="#FF000000" IsVisibleChanged="UIElement_IsVisibleChanged">
                 <sttplay:WPFSCPlayerPro x:Name="BackgroundPlayer"
                     OpenMode="Link" AutoOpen="True" OpenAndPlay="True" Loop="True" Volume="0.8"
                     
                     IsVisibleChanged="UIElement_IsVisibleChanged"
-                     
                     onCaptureOpenCallbackEvent="OnCaptureOpenCallbackEvent"
                     onRenderVideoFrameEvent="OnRenderVideoFrameEventHandler"
                     onStreamFinishedEvent="OnStreamFinishedEventHandler"
@@ -88,12 +86,12 @@
                     onRenderAudioFrameEvent="OnRenderAudioFrameEventHandler"
                     />
 
-                <Canvas x:Name="BackgroundButtons"></Canvas>
+                <Canvas x:Name="BackgroundButtons" IsVisibleChanged="UIElement_IsVisibleChanged"></Canvas>
             </Grid>
 
-            <!-- Center -->
-            <Grid x:Name="CenterContainer" Visibility="Hidden" Background="#FF000000" IsVisibleChanged="UIElement_IsVisibleChanged">
-                <sttplay:WPFSCPlayerPro x:Name="CenterPlayer"
+            <!-- Middle -->
+            <Grid x:Name="MiddleContainer" Visibility="Hidden" Background="#FF000000" IsVisibleChanged="UIElement_IsVisibleChanged">
+                <sttplay:WPFSCPlayerPro x:Name="MiddlePlayer"
                     OpenMode="Link" AutoOpen="True" OpenAndPlay="True" Loop="True" Volume="0.8"
                                         
                     IsVisibleChanged="UIElement_IsVisibleChanged"
@@ -104,7 +102,7 @@
                     onFirstFrameRenderEvent="OnFirstFrameRenderEventHandler"
                     />
 
-                <Canvas x:Name="CenterButtons"></Canvas>
+                <Canvas x:Name="MiddleButtons" IsVisibleChanged="UIElement_IsVisibleChanged"></Canvas>
             </Grid>
 
             <!-- Foreground -->
@@ -120,17 +118,7 @@
                     onFirstFrameRenderEvent="OnFirstFrameRenderEventHandler"
                     />
 
-                <Canvas x:Name="ForegroundButtons">
-                    <!--Visibility="{Binding Visibility, ElementName=Player}"
-                    <Button Name="Btn_00" Width="100" Height="100" FontSize="50" Margin="150,150">
-                        <Button.Background>
-                            <ImageBrush ImageSource="D:\Documents\WXWork\1688849995458235\Cache\Image\2021-03\218b8b85-f89e-4b23-a913-a5e030d21f6f.jpg"/>
-                        </Button.Background>
-                        <Button.Foreground>
-                            <ImageBrush ImageSource="D:\Documents\WXWork\1688849995458235\Cache\Image\2021-03\257fc851-7e08-4281-8afa-8054c3980fba.png"/>
-                        </Button.Foreground>
-                    </Button>
-                    -->
+                <Canvas x:Name="ForegroundButtons" IsVisibleChanged="UIElement_IsVisibleChanged">                   
                 </Canvas>
             </Grid>
 

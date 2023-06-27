@@ -39,8 +39,8 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="SpaceCG.Generic, Version=1.0.17.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\SpaceCG.Generic.1.0.17\lib\netstandard2.0\SpaceCG.Generic.dll</HintPath>
+    <Reference Include="SpaceCG.Generic, Version=1.0.19.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\SpaceCG.Generic.1.0.19\lib\netstandard2.0\SpaceCG.Generic.dll</HintPath>
     </Reference>
     <Reference Include="Sttplay.MediaPlayer">
       <HintPath>..\..\..\2023_BYD\BYD比亚迪主动悬架展品\BYD_DEMO\DEMO_CAR_P\bin\Release\Sttplay.MediaPlayer.dll</HintPath>
@@ -103,8 +103,8 @@
     <Compile Include="MainWindow_Override.cs" />
     <Compile Include="MainWindow_OnDragEnter.cs" />
     <Compile Include="MainWindow_NetwordSync.cs" />
-    <Compile Include="MainWindow_Extensions_Static.cs" />
-    <Compile Include="MainWindow_Extensions.cs" />
+    <Compile Include="MainWindowExtensions.cs" />
+    <Compile Include="MainWindow_Public_Methods.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -125,9 +125,7 @@
     <None Include="MediaContents.Config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="MediaContents.Sound.Config">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    <None Include="MediaContents.Sound.Config" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>

@@ -1,4 +1,5 @@
-﻿using System.Timers;
+﻿using System.Linq;
+using System.Timers;
 using System.Windows;
 using System.Xml.Linq;
 
@@ -7,87 +8,61 @@ namespace MediaPlayerPro
     public partial class MainWindow : Window
     {
         private Timer Timer;
-        private int CurrentTimerCount = 0;
-
-        protected int TimerNextItemID = -1;
-        protected int TargetTimerCount = -1;
+        private XElement TimerElement;
+        internal static int CurrentTickCount = 0;
 
         private void InitializeTimer(XElement timerElement)
         {
-            if (timerElement == null) return;
-
-            TimerNextItemID = -1;
-            TargetTimerCount = -1;
-            CurrentTimerCount = 0;
+            CurrentTickCount = 0;
+            TimerElement = timerElement;
 
             if (Timer == null)
             {
                 Timer = new Timer();
-                Timer.Interval = 1000;
                 Timer.Elapsed += Timer_Elapsed;
+                Timer.Interval = 1000;                
+                ControlInterface.AccessObjects.Add("Timer", Timer);
+                ControlInterface.NetworkMessageEvent += (s, e) => { RestartTimer(); };
             }
 
-#if DEBUG
-            TargetTimerCount = 10;
-#else
-            if(int.TryParse(timerElement.Attribute("Count")?.Value, out int count))
-            {
-                TargetTimerCount = count;
-            }
-#endif
-            if (int.TryParse(timerElement.Attribute("LoadItem")?.Value, out int nextId))
-            {
-                TimerNextItemID = nextId;
-            }
-
-            if (TargetTimerCount > 0) Timer?.Start();
-            else Timer?.Stop();
+            Timer.Interval = int.TryParse(TimerElement?.Attribute("Interval")?.Value, out int interval) ? interval : 1000;
+            if(Timer.Interval >= 30) Timer.Start();
         }
 
         private void Timer_Elapsed(object sender, ElapsedEventArgs e)
         {
-            if (RootConfiguration == null || CurrentItem == null) return;
+            if (RootConfiguration == null || TimerElement == null) return;
 
-            CurrentTimerCount++;
+            SyncSlaveOnline();
+            CurrentTickCount++;
 
-            if (TargetTimerCount > 0 && CurrentTimerCount >= TargetTimerCount)
+            var events = from evt in TimerElement.Elements(XEvents)
+                         where evt.Attribute("Count")?.Value == CurrentTickCount.ToString() && evt.Attribute("Name")?.Value == "Tick"
+                         select evt;
+            if (events?.Count() <= 0) return;
+
+            Log.Info($"Timer Current Tick Count: {CurrentTickCount}, Events Count: {events.Count()}");
+            this.Dispatcher.InvokeAsync(() =>
             {
-                if (Log.IsDebugEnabled) Log.Debug($"TimerEvent::{CurrentTimerCount}/{TargetTimerCount}");
-
-                Timer.Stop();
-                CurrentTimerCount = 0;
-                if (CurrentItemID == TimerNextItemID) return;
-
-                this.Dispatcher.InvokeAsync(() =>
+                foreach (XElement element in events.Elements())
                 {
-                    Log.Info($"Current Timer Count: {CurrentTimerCount}  Load Item ID: {TimerNextItemID}  ListAutoLoop: {ListAutoLoop}");
-                    LoadItem(TimerNextItemID);
-                });
-            }
+                    if (element.Name.LocalName == XAction)
+                    {
+                        ControlInterface.TryParseControlMessage(element, out object returnResult);
+                    }
+                }
+            });
         }
 
         /// <summary>
         /// 重置 Timer 计数器
         /// </summary>
-        public void RestartTimer()
+        protected void RestartTimer()
         {
             if (Timer == null) return;
 
-            CurrentTimerCount = 0;
-            if (!Timer.Enabled) Timer.Start();
-        }
-
-        /// <summary>
-        /// 定时加载 NextItem
-        /// </summary>
-        /// <param name="timerCount"></param>
-        /// <param name="id"></param>
-        public void LoadNextItem(int timerCount, int id)
-        {
-            TimerNextItemID = id;
-            TargetTimerCount = timerCount;
-
-            RestartTimer();
+            CurrentTickCount = 0;
+            Timer?.Restart();
         }
 
     }

@@ -5,17 +5,20 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
-using System.Windows;
+using System.Timers;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Xml.Linq;
 using SpaceCG.Extensions;
+using SpaceCG.Generic;
 using Sttplay.MediaPlayer;
 
 namespace MediaPlayerPro
 {
-    public partial class MainWindow : Window
+    public static class MainWindowExtensions
     {
+        static readonly LoggerTrace Log = new LoggerTrace(nameof(MainWindowExtensions));
+
         #region Static Functions
         /// <summary>
         /// 是否是音频或视频文件
@@ -215,7 +218,7 @@ namespace MediaPlayerPro
         /// 检查更新元素，移除或是修改的属性的值，以保持格式的正确性
         /// </summary>
         /// <param name="rootElements"></param>
-        private static void CheckAndUpdateElements(XElement rootElements)
+        public static void CheckAndUpdateElements(XElement rootElements)
         {
             foreach (XElement element in rootElements.Descendants())
             {
@@ -227,22 +230,10 @@ namespace MediaPlayerPro
                     XAttribute imageSource = element.Attribute("ImageSource");
                     imageSource.Value = Path.Combine(Environment.CurrentDirectory, imageSource?.Value);
                 }
-#if false
-                //1.控制接口属性 Target
-                else if(localName == "Action")
+                //1.移除显示对象禁止访问的属性
+                else if (MainWindow.FrameworkElements.IndexOf(localName) != -1)
                 {
-                    if (element.Attribute("Target") == null)
-                    {
-                        XAttribute xTarget = element.Attribute("TargetObj") != null ? element.Attribute("TargetObj") : element.Attribute("TargetKey");
-                        if (xTarget == null) continue;
-                        element.Add(new XAttribute("Target", xTarget.Value));
-                    }
-                }
-#endif
-                //2.移除显示对象禁止访问的属性
-                else if (FrameworkElements.IndexOf(localName) != -1)
-                {
-                    foreach (string xname in DisableAttributes)
+                    foreach (string xname in MainWindow.DisableAttributes)
                     {
                         var attribute = element.Attribute(xname);
                         if (attribute != null) attribute.Remove();
@@ -256,72 +247,66 @@ namespace MediaPlayerPro
         /// </summary>
         /// <param name="rootElements"></param>
         [Obsolete("兼容性处理函数")]
-        private static void CompatibleProcess(XElement rootElements)
+        public static void CompatibleProcess(XElement rootElements)
         {
             //0.新旧元素节点名称的替换
             //key:oldElementNodeName, value:newElementNodeName
             Dictionary<string, string> OldElementName = new Dictionary<string, string>();
-            OldElementName.Add("MiddleGroup", $"{CENTER}{CONTAINER}");
-            OldElementName.Add("MiddlePlayer", $"{CENTER}{PLAYER}");
-            OldElementName.Add("MiddleButtons", $"{CENTER}{BUTTONS}");
-            OldElementName.Add("ForegroundGroup", $"{FOREGROUND}{CONTAINER}");
-            OldElementName.Add("BackgroundGroup", $"{BACKGROUND}{CONTAINER}");
+            OldElementName.Add("MiddleGroup", $"{MainWindow.MIDDLE}{MainWindow.CONTAINER}");
+            OldElementName.Add("ForegroundGroup", $"{MainWindow.FOREGROUND}{MainWindow.CONTAINER}");
+            OldElementName.Add("BackgroundGroup", $"{MainWindow.BACKGROUND}{MainWindow.CONTAINER}");
             foreach (var element in rootElements.Descendants())
             {
                 string localName = element.Name.LocalName;
-                if (!OldElementName.ContainsKey(localName)) continue;
-                element.Name = OldElementName[localName];
-            }
 
-            //0.控制接口属性 Target
-            IEnumerable<XElement> actions = rootElements.Descendants("Action");
-            foreach(var action in actions)
-            {
-                if (action.Attribute("Target") == null)
+                //0.显示节点名称替换
+                if (OldElementName.ContainsKey(localName))
                 {
-                    XAttribute xTarget = action.Attribute("TargetObj") != null ? action.Attribute("TargetObj") : action.Attribute("TargetKey");
-                    if (xTarget == null) continue;
-                    //替换旧的显示对象名称
-                    string value = OldElementName.ContainsKey(xTarget.Value) ? OldElementName[xTarget.Value] : xTarget.Value;
-                    action.Add(new XAttribute("Target", value));
+                    element.Name = OldElementName[localName];
+                }
+                //1.控制接口属性 Target
+                if (localName == "Action")
+                {
+                    if (element.Attribute("Target") == null)
+                    {
+                        XAttribute xTarget = element.Attribute("TargetObj") != null ? element.Attribute("TargetObj") : element.Attribute("TargetKey");
+                        if (xTarget == null) continue;
+                        //替换旧的显示对象名称
+                        string value = OldElementName.ContainsKey(xTarget.Value) ? OldElementName[xTarget.Value] : xTarget.Value;
+                        element.Add(new XAttribute("Target", value));
+                    }
                 }
             }
-
         }
 
         /// <summary>
-        /// 扩展类型转换
+        /// 重启计时器
         /// </summary>
-        /// <param name="value"></param>
-        /// <param name="conversionType"></param>
-        /// <param name="conversionValue"></param>
-        /// <returns></returns>
-        private static bool ConvertChangeTypeExtension(object value, Type conversionType, out object conversionValue)
+        /// <param name="timer"></param>
+        public static void Restart(this Timer timer)
         {
-            conversionValue = null;
-            if (conversionType == null) return false;
+            if (timer == null) return;
 
-            if (value == null) return true;                        
-            if (value.GetType() == typeof(string))
-            {
-                string sValue = value.ToString();
-                if (String.IsNullOrWhiteSpace(sValue) || sValue.ToLower().Trim() == "null") return true;
-
-                if(sValue.IndexOf('#') == 0 && conversionType == typeof(Brush))
-                {
-                    Color color = (Color)ColorConverter.ConvertFromString(sValue);
-                    conversionValue = new SolidColorBrush(color);
-                    return true;
-                }
-            }
-            else
-            {
-
-            }
-
-
-            return false;
+            MainWindow.CurrentTickCount = 0;
+            if (!timer.Enabled) timer.Start();
         }
-
+        /// <summary>
+        /// 扩展 <see cref="WPFSCPlayerPro.Open(MediaType, string)"/> 方法
+        /// </summary>
+        /// <param name="player"></param>
+        public static void Open(this WPFSCPlayerPro player)
+        {
+            if (player == null) return;
+            player.Open(player.OpenMode, null);
+        }
+        /// <summary>
+        /// 扩展 <see cref="WPFSCPlayerPro.Open(MediaType, string)"/> 方法
+        /// </summary>
+        /// <param name="player"></param>
+        public static void Open(this WPFSCPlayerPro player, string url)
+        {
+            if (player == null) return;
+            player.Open(player.OpenMode, url);
+        }
     }
 }
