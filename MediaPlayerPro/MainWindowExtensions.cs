@@ -276,6 +276,14 @@ namespace MediaPlayerPro
                         element.Add(new XAttribute("Target", value));
                     }
                 }
+                else if (localName == "Events" && element.HasAttributes)
+                {
+                    element.Name = MainWindow.XEvent;
+                    if (element.Attribute(MainWindow.XType) == null && element.Attribute("Name") != null)
+                    {
+                        element.Add(new XAttribute(MainWindow.XType, element.Attribute("Name").Value));
+                    }
+                }
             }
         }
 

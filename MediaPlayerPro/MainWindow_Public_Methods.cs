@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Xml.Linq;
+using SpaceCG.Extensions;
 
 namespace MediaPlayerPro
 {
@@ -109,6 +110,26 @@ namespace MediaPlayerPro
                 LoadItem(nextId);
                 return;
             }
+        }
+        /// <summary>
+        ///  临近的 ID 项，下一个项
+        /// </summary>
+        /// <param name="logicLoop">逻辑循环，如果没找到下一个项，则往上查找同级第一个项</param>
+        public void NextItem(bool logicLoop)
+        {
+            if (CurrentItem == null) return;
+
+            //向下查找 Item
+            int nextId = CurrentItemID + 1;
+            IEnumerable<XElement> nextItems = from item in ItemElements
+                                              where item.Attribute("ID")?.Value == nextId.ToString()
+                                              select item;
+            if (nextItems?.Count() == 1)
+            {
+                LoadItem(nextId);
+                return;
+            }
+            if (!logicLoop) return;
 
             //向上查找 Item
             int prevId = CurrentItemID - 1;
@@ -124,7 +145,7 @@ namespace MediaPlayerPro
                     return;
                 }
 
-                prevId --;
+                prevId--;
             }
         }
         /// <summary>
@@ -144,10 +165,30 @@ namespace MediaPlayerPro
                 LoadItem(prevId);
                 return;
             }
+        }
+        /// <summary>
+        /// 临近的 ID 项，上一个项
+        /// </summary>
+        /// <param name="logicLoop">逻辑循环，如果没找到上一个项，则往下查找同级最后一个项</param>
+        public void PrevItem(bool logicLoop)
+        {
+            if (CurrentItem == null) return;
+
+            //向上查找 Item
+            int prevId = CurrentItemID - 1;
+            IEnumerable<XElement> prevItems = from item in ItemElements
+                                              where item.Attribute("ID")?.Value == prevId.ToString()
+                                              select item;
+            if (prevItems?.Count() == 1)
+            {
+                LoadItem(prevId);
+                return;
+            }
+            if (!logicLoop) return;
 
             //向下查找 Item
             int nextId = CurrentItemID + 1;
-            while(true)
+            while (true)
             {
                 IEnumerable<XElement> nextItems = from item in ItemElements
                                                   where item.Attribute("ID")?.Value == nextId.ToString()
@@ -158,9 +199,10 @@ namespace MediaPlayerPro
                     return;
                 }
 
-                nextId ++;
-            }            
+                nextId++;
+            }
         }
+
         /// <summary>
         /// 下一个节点
         /// </summary>
@@ -211,6 +253,73 @@ namespace MediaPlayerPro
             CurrentPlayer.Pause();
         }
 
+
+        /// <summary>
+        /// Call Event Name
+        /// </summary>
+        /// <param name="eventName"></param>
+        public void CallEventName(string eventName)
+        {
+            IEnumerable<XElement> events = from evt in RootConfiguration.Descendants(XEvent)
+                                           where evt.Attribute("Name")?.Value == eventName
+                                           select evt;
+            Log.Info($"CallEventName: Name {eventName}  Count: {events?.Count()}");
+            CallEventElements(events);
+        }
+        /// <summary>
+        /// Call Event Name From Item
+        /// </summary>
+        /// <param name="eventName"></param>
+        /// <param name="itemID"></param>
+        public void CallEventName(string eventName, string itemID)
+        {
+            IEnumerable<XElement> events = from item in RootConfiguration.Descendants("Item")
+                                           where item.Attribute("ID")?.Value == itemID
+                                           from evt in item.Descendants(XEvent)
+                                           where evt.Attribute("Name")?.Value == eventName
+                                           select evt;
+            Log.Info($"CallEventName: Name {eventName}  ItemID:{itemID}  Count: {events?.Count()}");
+            CallEventElements(events);
+        }
+
+        /// <summary>
+        /// 调用 指定项 => 指定按扭容器 => 指定的按扭 => 事件或属性
+        /// </summary>
+        /// <param name="buttonName"></param>
+        /// <param name="buttonContainer"></param>
+        /// <param name="itemID">页面ID</param>
+        public void CallButtonEvent(string buttonName, string buttonContainer, string itemID)
+        {
+            IEnumerable<XElement> events = from item in ItemElements
+                                           where item.Attribute("ID")?.Value.Trim() == itemID
+                                           from container in item.Elements(buttonContainer)
+                                           from evt in container.Elements(XEvent)
+                                           where evt.Attribute(XType)?.Value.Trim() == "Click" && evt.Attribute("Element")?.Value.Trim() == buttonName
+                                           select evt;
+
+            Log.Info($"CallButtonEvent: ItemID: {itemID}  ButtonContainer:{buttonContainer}  ButtonName: {buttonName}  Count: {events?.Count()}");
+
+            CallEventElements(events);
+        }
+        /// <summary>
+        /// 调用 当前项(<see cref="CurrentItemID"/>) => 指定按扭容器 => 指定的按扭 => 事件或属性
+        /// </summary>
+        /// <param name="buttonName"></param>
+        /// <param name="buttonContainer"></param>
+        public void CallButtonEvent(string buttonName, string buttonContainer) => CallButtonEvent(buttonName, buttonContainer, CurrentItemID.ToString());
+        /// <summary>
+        /// 调用 当前项(<see cref="CurrentItemID"/>) => 当前最顶端的显示按扭容器 => 指定的按扭 => 事件或属性
+        /// </summary>
+        /// <param name="buttonName"></param>
+        public void CallButtonEvent(string buttonName)
+        {
+            var btnContainer = ForegroundContainer.Visibility == Visibility.Visible && ForegroundButtons.Visibility == Visibility.Visible ? ForegroundButtons :
+                               MiddleContainer.Visibility == Visibility.Visible && MiddleButtons.Visibility == Visibility.Visible ? MiddleButtons :
+                               BackgroundContainer.Visibility == Visibility.Visible && BackgroundButtons.Visibility == Visibility.Visible ? BackgroundButtons : null;
+
+            CallButtonEvent(buttonName, btnContainer.Name, CurrentItemID.ToString());
+        }
+
         public void Sleep(int ms)
         {
             System.Threading.Thread.Sleep(ms);
@@ -222,6 +331,32 @@ namespace MediaPlayerPro
                 Log.Info("This is test message, Hello World ...");
             else
                 Log.Info(message);
+        }
+
+
+        /// <summary>
+        /// Call Event Elements
+        /// </summary>
+        /// <param name="events"></param>
+        protected void CallEventElements(IEnumerable<XElement> events)
+        {
+            if (events?.Count() == 0) return;
+
+            stopwatch.Restart();
+            foreach (XElement element in events.Elements())
+            {
+                if (element.Name.LocalName == XAction)
+                {
+                    ControlInterface.TryParseControlMessage(element, out object returnResult);
+                }
+                else
+                {
+                    InstanceExtensions.SetInstancePropertyValues(this, element);
+                }
+            }
+
+            stopwatch.Stop();
+            Log.Info($"Call Event Elements({events?.Count()}) use {stopwatch.ElapsedMilliseconds} ms");
         }
 
     }

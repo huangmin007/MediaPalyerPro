@@ -26,9 +26,10 @@ namespace MediaPlayerPro
     {
         public static readonly LoggerTrace Log = new LoggerTrace(nameof(MainWindow));
         private readonly string MEDIA_CONFIG_FILE = "MediaContents.Config";
-
+        
+        internal const string XEvent = "Event";
+        internal const string XType = "Type";
         internal const string XAction = "Action";
-        internal const string XEvents = "Events";
 
         internal const string FOREGROUND = "Foreground";
         internal const string BACKGROUND = "Background";
@@ -44,10 +45,14 @@ namespace MediaPlayerPro
         internal static List<String> DisableAttributes = new List<string>() { "Name", "Content" };
 
         private XElement RootConfiguration = null;
-        private IEnumerable<XElement> ItemElements;
-        public Boolean ListAutoLoop { get; set; } = false;
-        public XElement AppSettings { get; private set; } = null;
-        public XElement CurrentItem { get; private set; } = null;
+        protected IEnumerable<XElement> ItemElements;
+        protected Boolean ListAutoLoop { get; set; } = false;
+        protected XElement AppSettings { get; private set; } = null;
+        protected XElement CurrentItem { get; private set; } = null;
+
+        /// <summary>
+        /// 当前 Item 的 ID
+        /// </summary>
         public int CurrentItemID { get; private set; } = int.MinValue;
 
         private Process ProcessModule;
@@ -75,6 +80,7 @@ namespace MediaPlayerPro
             LoggerWindow = new LoggerWindow();
             ControlInterface = new ControlInterface(localPort);
             ControlInterface.AccessObjects.Add("Window", this.Window);
+            ControlInterface.MethodFilters.Add("*.ReleaseCore");
             InstanceExtensions.ConvertChangeTypeExtension = ConvertChangeTypeExtension;
 
             this.RootContainer.Width = this.Width;
@@ -109,6 +115,8 @@ namespace MediaPlayerPro
                     }
                 }
             }
+
+            FrameworkElements.Add(RootContainer.Name);
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -164,6 +172,7 @@ namespace MediaPlayerPro
                 MainWindowExtensions.CompatibleProcess(RootConfiguration);
                 MainWindowExtensions.CheckAndUpdateElements(RootConfiguration);
                 XElementExtensions.ReplaceTemplateElements(RootConfiguration, "Template", "RefTemplate", true);
+                Console.WriteLine(RootConfiguration);
             }
             catch (Exception ex)
             {
@@ -186,7 +195,7 @@ namespace MediaPlayerPro
                 if(syncElement != null) InitializeNetworkSync(syncElement);
             }
 
-            ItemElements = RootConfiguration.Elements("Item");
+            ItemElements = RootConfiguration.Descendants("Item");
             if (bool.TryParse(RootConfiguration.Attribute("AutoLoop")?.Value, out bool listAutoLoop)) ListAutoLoop = listAutoLoop;
             if (int.TryParse(RootConfiguration.Attribute("DefaultID")?.Value, out int id)) LoadItem(id);
         }
@@ -251,13 +260,13 @@ namespace MediaPlayerPro
                         InstanceExtensions.SetInstancePropertyValues(this, element);
 
                         //Buttons
-                        if (uiElement.GetType() == typeof(Canvas) && uiElement.Name.IndexOf(BUTTONS) != -1 && element.Elements("Button")?.Count() > 0)
+                        if (uiElement.GetType() == typeof(Canvas) && uiElement.Name.IndexOf(BUTTONS) != -1 && element.Elements(BUTTON)?.Count() > 0)
                         {
-                            Panel PanelButtons = (Panel)uiElement;
+                            Panel buttonContainer = (Panel)uiElement;
                             //Clear
-                            PanelButtons.Children.Clear();
+                            buttonContainer.Children.Clear();
                             //Add
-                            foreach (XElement btnElement in element.Elements("Button"))
+                            foreach (XElement btnElement in element.Elements(BUTTON))
                             {
                                 using (StringReader stringReader = new StringReader(btnElement.ToString()))
                                 {
@@ -266,8 +275,8 @@ namespace MediaPlayerPro
                                         using (XamlXmlReader xamlXmlReader = new XamlXmlReader(xmlReader, xamlXmlReaderSettings))
                                         {
                                             Button button = System.Windows.Markup.XamlReader.Load(xamlXmlReader) as Button;
-                                            button.ToolTip = String.Format($"{CurrentItemID}.{PanelButtons.Name}.{button.Name}");
-                                            PanelButtons.Children.Add(button);
+                                            button.ToolTip = String.Format($"{button.Name}.{buttonContainer.Name}.{CurrentItemID}");
+                                            buttonContainer.Children.Add(button);
                                         }
                                     }
                                 }
@@ -275,7 +284,7 @@ namespace MediaPlayerPro
                         }
                     }
 
-                    //Sub Element Actions
+                    //Sub Element Actions                    
                     foreach (XElement action in element?.Elements(XAction))
                     {
                         ControlInterface.TryParseControlMessage(action, out object returnResult);
@@ -308,57 +317,6 @@ namespace MediaPlayerPro
         }
 
         /// <summary>
-        /// 调用 指定项 => 指定按扭容器 => 指定的按扭 => 事件或属性
-        /// </summary>
-        /// <param name="itemID">页面ID</param>
-        /// <param name="buttonContainer"></param>
-        /// <param name="buttonName"></param>
-        public void CallButtonEvent(int itemID, string buttonContainer, string buttonName)
-        {
-            stopwatch.Restart();
-            IEnumerable<XElement> events = from item in ItemElements
-                                           where item.Attribute("ID")?.Value.Trim() == itemID.ToString()
-                                           from container in item.Elements(buttonContainer)
-                                           from evt in container.Elements(XEvents)
-                                           where evt.Attribute("Name")?.Value.Trim() == "Click" && evt.Attribute("Button")?.Value.Trim() == buttonName
-                                           select evt;
-
-            Log.Info($"CallButtonEvent: ItemID: {itemID}  LayerName:{buttonContainer}  ButtonName: {buttonName}  Count: {events?.Count()}");
-
-            foreach (XElement element in events.Elements())
-            {
-                if (element.Name.LocalName == XAction)
-                {
-                    ControlInterface.TryParseControlMessage(element, out object returnResult);
-                }
-                else
-                {
-                    InstanceExtensions.SetInstancePropertyValues(this, element);
-                }
-            }
-
-            stopwatch.Stop();
-            Log.Info($"Call Button Events use {stopwatch.ElapsedMilliseconds} ms");
-        }
-        /// <summary>
-        /// 调用 当前项(<see cref="CurrentItemID"/>) => 指定按扭容器 => 指定的按扭 => 事件或属性
-        /// </summary>
-        /// <param name="buttonContainer"></param>
-        /// <param name="buttonName"></param>
-        public void CallButtonEvent(string buttonContainer, string buttonName) => CallButtonEvent(CurrentItemID, buttonContainer, buttonName);
-        /// <summary>
-        /// 调用 当前项(<see cref="CurrentItemID"/>) => 当前最顶端的显示按扭容器 => 指定的按扭 => 事件或属性
-        /// </summary>
-        /// <param name="buttonName"></param>
-        public void CallButtonEvent(string buttonName)
-        {
-            var btnContainer = ForegroundContainer.Visibility == Visibility.Visible && ForegroundButtons.Visibility == Visibility.Visible ? ForegroundButtons :
-                               MiddleContainer.Visibility == Visibility.Visible && MiddleButtons.Visibility == Visibility.Visible ? MiddleButtons :
-                               BackgroundContainer.Visibility == Visibility.Visible && BackgroundButtons.Visibility == Visibility.Visible ? BackgroundButtons : null;
-
-            CallButtonEvent(CurrentItemID, btnContainer.Name, buttonName);
-        }
-        /// <summary>
         /// Call Button Event
         /// </summary>
         /// <param name="button"></param>
@@ -367,20 +325,15 @@ namespace MediaPlayerPro
             XElement buttonElements = (button.Parent as FrameworkElement)?.ToolTip as XElement;
             if (buttonElements == null) return false;
 
-            IEnumerable<XElement> events = from evs in buttonElements.Elements(XEvents)
-                                           where evs.Attribute("Name")?.Value == "Click" && evs.Attribute("Button")?.Value == button.Name
+            IEnumerable<XElement> events = from evs in buttonElements.Elements(XEvent)
+                                           where evs.Attribute(XType)?.Value == "Click" && evs.Attribute("Element")?.Value == button.Name
                                            select evs;
             if (events?.Count() <= 0) return false;
 
-            foreach (XElement element in events?.Elements())
-            {
-                if (element.Name.LocalName == XAction)
-                    ControlInterface.TryParseControlMessage(element, out object returnResult);
-                else
-                    InstanceExtensions.SetInstancePropertyValues(this, element);
-            }
+            CallEventElements(events);
             return true;
         }
+        
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             e.Handled = true;
@@ -390,7 +343,7 @@ namespace MediaPlayerPro
             if (!CallButtonEvent(button) && button.ToolTip != null)
             {
                 String[] tips = button.ToolTip.ToString().Split('.');
-                CallButtonEvent(int.Parse(tips[0]), tips[1], tips[2]);
+                CallButtonEvent(tips[0], tips[1], tips[2]);
             }            
         }
         private void UIElement_MouseDown(object sender, MouseButtonEventArgs e)
@@ -446,7 +399,6 @@ namespace MediaPlayerPro
         /// <returns></returns>
         public static bool ConvertChangeTypeExtension(object value, Type conversionType, out object conversionValue)
         {
-            Console.WriteLine($">>>{value}");
             conversionValue = null;
             if (conversionType == null) return false;
 

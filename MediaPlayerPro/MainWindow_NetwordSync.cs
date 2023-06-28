@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using System.Timers;
-//using System.Threading;
-//using System.Threading.Tasks;
 using System.Windows;
 using System.Xml.Linq;
 using SpaceCG.Extensions;

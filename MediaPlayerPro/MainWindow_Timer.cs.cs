@@ -36,8 +36,8 @@ namespace MediaPlayerPro
             SyncSlaveOnline();
             CurrentTickCount++;
 
-            var events = from evt in TimerElement.Elements(XEvents)
-                         where evt.Attribute("Count")?.Value == CurrentTickCount.ToString() && evt.Attribute("Name")?.Value == "Tick"
+            var events = from evt in TimerElement.Elements(XEvent)
+                         where evt.Attribute(XType)?.Value == "Tick" && evt.Attribute("Count")?.Value == CurrentTickCount.ToString() 
                          select evt;
             if (events?.Count() <= 0) return;
 

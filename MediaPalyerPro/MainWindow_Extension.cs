@@ -38,7 +38,7 @@ namespace MediaPalyerPro
             ForegroundPlayer.VolumeUp();
 #else
             float volume = BackgroundPlayer.Volume;
-            volume = (float)(volume + 0.1f >= 1.0f ? 1.0 : volume + 0.1f);
+            volume = (float)(volume + 0.1f >= 1.0f ? 1.0f : volume + 0.1f);
             
             MiddlePlayer.Volume = volume;
             BackgroundPlayer.Volume = volume;

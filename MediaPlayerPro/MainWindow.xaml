@@ -6,8 +6,8 @@
         xmlns:local="clr-namespace:MediaPlayerPro" 
         xmlns:sttplay="clr-namespace:Sttplay.MediaPlayer;assembly=Sttplay.MediaPlayer"
         mc:Ignorable="d" Title="Media Player Pro"
-        Height="720" Width="1280" Background="#FF000000" 
-        Loaded="Window_Loaded" DragDrop.Drop="Window_Drop">
+        Height="720" Width="1280" Background="#FF000000"
+        Loaded="Window_Loaded" DragDrop.Drop="Window_Drop" Margin="0" AllowsTransparency="False" >
     <Window.Resources>
         <Style TargetType="Button">
             <Setter Property="Cursor" Value="Hand"/>
@@ -118,10 +118,11 @@
                     onFirstFrameRenderEvent="OnFirstFrameRenderEventHandler"
                     />
 
-                <Canvas x:Name="ForegroundButtons" IsVisibleChanged="UIElement_IsVisibleChanged">                   
+                <Canvas x:Name="ForegroundButtons" IsVisibleChanged="UIElement_IsVisibleChanged">
                 </Canvas>
             </Grid>
-
+        
         </Grid>
+    
     </Viewbox>
 </Window>

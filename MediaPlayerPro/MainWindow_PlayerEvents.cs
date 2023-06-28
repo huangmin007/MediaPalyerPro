@@ -34,8 +34,8 @@ namespace MediaPlayerPro
             playerRenderEvents[player.Name] = null;
             if ((player.ToolTip as XElement) != null)
             {
-                playerRenderEvents[player.Name] = from evt in ((XElement)player.ToolTip).Elements(XEvents)
-                                                  let name = evt.Attribute("Name")?.Value
+                playerRenderEvents[player.Name] = from evt in ((XElement)player.ToolTip).Elements(XEvent)
+                                                  let name = evt.Attribute(XType)?.Value
                                                   where name == OnRenderFrame || name == OnVideoRenderFrame || name == OnAudioRenderFrame
                                                   select evt;
                 if (playerRenderEvents[player.Name]?.Count() == 0) playerRenderEvents[player.Name] = null;
@@ -44,7 +44,7 @@ namespace MediaPlayerPro
         private void OnFirstFrameRenderEventHandler(WPFSCPlayerPro player)
         {
             double currentTime = Math.Round(player.CurrentTime / 1000.0f, 2);
-            Log.Info($"WPFSCPlayerPro({player.Name}) First Frame Render Evnet. URL: {player.Url} CurrentTime: {currentTime:F2}");
+            Log.Info($"WPFSCPlayerPro({player.Name}) First Frame Render Event. URL: {player.Url} CurrentTime: {currentTime:F2}");
 
             CallPlayerEvent(player, OnFirstFrame);
             playerLastTimer[player.Name] = currentTime;
@@ -86,13 +86,13 @@ namespace MediaPlayerPro
         /// <summary>
         /// 执行配置事件
         /// </summary>
-        /// <param name="eventName"></param>
+        /// <param name="eventType"></param>
         /// <param name="currentTime"></param>
         /// <param name="lastTime"></param>
-        protected void CallPlayerEvent(WPFSCPlayerPro player, String eventName, double currentTime = -1.0f, double lastTime = -1.0f)
+        protected void CallPlayerEvent(WPFSCPlayerPro player, String eventType, double currentTime = -1.0f, double lastTime = -1.0f)
         {
-            IEnumerable<XElement> events = from evt in (player.ToolTip as XElement)?.Elements(XEvents)
-                                           where evt.Attribute("Name")?.Value == eventName
+            IEnumerable<XElement> events = from evt in (player.ToolTip as XElement)?.Elements(XEvent)
+                                           where evt.Attribute(XType)?.Value == eventType
                                            select evt;
             if (events?.Count() == 0) return;
 
@@ -102,12 +102,12 @@ namespace MediaPlayerPro
                 {
                     if (!double.TryParse(element.Parent.Attribute("Position")?.Value, out double position)) continue;
                     if (!(position <= currentTime && position > lastTime)) continue;
-                    Log.Info($"WPFSCPlayerPro({player.Name}) Render Frame Evnet ({eventName})  CurrentTimer: {currentTime:F2}");
+                    Log.Info($"WPFSCPlayerPro({player.Name}) Render Frame Event ({eventType})  CurrentTimer: {currentTime:F2}");
                 }
 
                 Task.Run(() =>
                 {
-                    if (element.Name.LocalName == "Action")
+                    if (element.Name.LocalName == XAction)
                     {
                         ControlInterface.TryParseControlMessage(element, out object returnResult);
                     }
