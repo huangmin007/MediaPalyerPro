@@ -47,7 +47,7 @@ namespace MediaPlayerPro
         private XElement RootConfiguration = null;
         protected IEnumerable<XElement> ItemElements;
         protected Boolean ListAutoLoop { get; set; } = false;
-        protected XElement AppSettings { get; private set; } = null;
+        protected XElement Settings { get; private set; } = null;
         protected XElement CurrentItem { get; private set; } = null;
 
         /// <summary>
@@ -76,7 +76,7 @@ namespace MediaPlayerPro
             ushort localPort = ushort.TryParse(ConfigurationManager.AppSettings["Interface.LocalPort"], out ushort port) ? port : (ushort)2023;
 
             this.Window = this;
-            this.Title = "Meida Player Pro v1.0.20230620"; 
+            this.Title = "Meida Player Pro v1.2.20230620"; 
             LoggerWindow = new LoggerWindow();
             ControlInterface = new ControlInterface(localPort);
             ControlInterface.AccessObjects.Add("Window", this.Window);
@@ -185,13 +185,13 @@ namespace MediaPlayerPro
                 return;
             }
 
-            AppSettings = RootConfiguration.Element("AppSettings");
-            if(AppSettings != null)
+            Settings = RootConfiguration.Element("Settings");
+            if(Settings != null)
             {
-                XElement timerElement = AppSettings.Element("Timer");
+                XElement timerElement = Settings.Element("Timer");
                 if(timerElement != null) InitializeTimer(timerElement);
 
-                XElement syncElement = AppSettings.Element("Synchronize");
+                XElement syncElement = Settings.Element("Synchronize");
                 if(syncElement != null) InitializeNetworkSync(syncElement);
             }
 
