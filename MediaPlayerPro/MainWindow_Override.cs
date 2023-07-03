@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using SpaceCG.Extensions;
+using SpaceCG.Extensions.Modbus;
 using SpaceCG.Generic;
 
 namespace MediaPlayerPro
@@ -48,6 +49,9 @@ namespace MediaPlayerPro
                     subChild.IsVisibleChanged -= UIElement_IsVisibleChanged;
                 }
             }
+
+            ConnectionManagement.Dispose();
+            ModbusDeviceManagement.Dispose();
 
             InstanceExtensions.RemoveInstanceEvents(MiddlePlayer);
             InstanceExtensions.RemoveInstanceEvents(ForegroundPlayer);

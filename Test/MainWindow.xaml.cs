@@ -43,9 +43,6 @@ namespace Test
             //master = ModbusSerialMaster.CreateRtu(new NModbus4TcpClientAdapter("127.0.0.1", 8899));
             //ModbusIpMaster.CreateIp(new NModbus4TcpClientAdapter("127.0.0.1", 8899));
             //master = ModbusSerialMaster.CreateRtu(tcpClient);
-            
-            
-            master = ModbusSerialMaster.CreateRtu(new NModbus4SerialPortAdapter("com3", 115200));
 
         }
 

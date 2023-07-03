@@ -39,8 +39,14 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="SpaceCG.Generic, Version=1.0.19.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\SpaceCG.Generic.1.0.19\lib\netstandard2.0\SpaceCG.Generic.dll</HintPath>
+    <Reference Include="NModbus4.Core, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NModbus4.Core.1.0.2\lib\netstandard2.0\NModbus4.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="SpaceCG.Extensions.Modbus, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\SpaceCG.Extensions.Modbus.1.0.8\lib\netstandard2.0\SpaceCG.Extensions.Modbus.dll</HintPath>
+    </Reference>
+    <Reference Include="SpaceCG.Generic, Version=1.0.24.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\SpaceCG.Generic.1.0.24\lib\netstandard2.0\SpaceCG.Generic.dll</HintPath>
     </Reference>
     <Reference Include="Sttplay.MediaPlayer">
       <HintPath>..\..\..\2023_BYD\BYD比亚迪主动悬架展品\BYD_DEMO\DEMO_CAR_P\bin\Release\Sttplay.MediaPlayer.dll</HintPath>
@@ -49,6 +55,9 @@
     <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Data" />
+    <Reference Include="System.IO.Ports, Version=7.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.IO.Ports.7.0.0\lib\net462\System.IO.Ports.dll</HintPath>
+    </Reference>
     <Reference Include="System.Runtime, Version=4.1.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Runtime.4.3.0\lib\net462\System.Runtime.dll</HintPath>
       <Private>True</Private>

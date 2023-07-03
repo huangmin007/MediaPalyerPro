@@ -333,7 +333,6 @@ namespace MediaPlayerPro
                 Log.Info(message);
         }
 
-
         /// <summary>
         /// Call Event Elements
         /// </summary>

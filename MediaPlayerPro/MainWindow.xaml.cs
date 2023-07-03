@@ -16,6 +16,7 @@ using SpaceCG.Extensions;
 using System.Threading;
 using System.Configuration;
 using System.Windows.Media;
+using SpaceCG.Extensions.Modbus;
 
 namespace MediaPlayerPro
 {
@@ -62,7 +63,7 @@ namespace MediaPlayerPro
         /// <summary> 当前播放器 </summary>
         private WPFSCPlayerPro CurrentPlayer;
         /// <summary> 控制接口 </summary>
-        private ControlInterface ControlInterface;
+        private ReflectionInterface ControlInterface;
 
         private XmlParserContext xmlParserContext;
         private XmlReaderSettings xmlReaderSettings;
@@ -78,7 +79,7 @@ namespace MediaPlayerPro
             this.Window = this;
             this.Title = "Meida Player Pro v1.2.20230620"; 
             LoggerWindow = new LoggerWindow();
-            ControlInterface = new ControlInterface(localPort);
+            ControlInterface = new ReflectionInterface(localPort);
             ControlInterface.AccessObjects.Add("Window", this.Window);
             ControlInterface.MethodFilters.Add("*.ReleaseCore");
             InstanceExtensions.ConvertChangeTypeExtension = ConvertChangeTypeExtension;
@@ -186,15 +187,31 @@ namespace MediaPlayerPro
             }
 
             Settings = RootConfiguration.Element("Settings");
-            if(Settings != null)
+            if (Settings != null)
             {
                 XElement timerElement = Settings.Element("Timer");
-                if(timerElement != null) InitializeTimer(timerElement);
+                if (timerElement != null) InitializeTimer(timerElement);
 
                 XElement syncElement = Settings.Element("Synchronize");
-                if(syncElement != null) InitializeNetworkSync(syncElement);
+                if (syncElement != null) InitializeNetworkSync(syncElement);
             }
 
+            ConnectionManagement.Dispose();
+            XElement Connections = RootConfiguration.Element(ConnectionManagement.XConnections);
+            if (Connections != null)
+            {
+                ConnectionManagement.Instance.Configuration(ControlInterface, Connections.Attribute(ReflectionInterface.XName)?.Value);
+                ConnectionManagement.Instance.TryParseElements(Connections.Descendants(ConnectionManagement.XConnection));
+            }            
+
+            ModbusDeviceManagement.Dispose();
+            IEnumerable<XElement> ModbusElements = RootConfiguration.Descendants(ModbusTransport.XModbus);
+            if (ModbusElements?.Count() > 0)
+            {
+                ModbusDeviceManagement.Instance.Configuration(ControlInterface, RootConfiguration.Attribute(nameof(ModbusDeviceManagement))?.Value);
+                ModbusDeviceManagement.Instance.TryParseElements(ModbusElements);
+            }
+            
             ItemElements = RootConfiguration.Descendants("Item");
             if (bool.TryParse(RootConfiguration.Attribute("AutoLoop")?.Value, out bool listAutoLoop)) ListAutoLoop = listAutoLoop;
             if (int.TryParse(RootConfiguration.Attribute("DefaultID")?.Value, out int id)) LoadItem(id);
