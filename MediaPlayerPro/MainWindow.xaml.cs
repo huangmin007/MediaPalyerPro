@@ -13,7 +13,6 @@ using System.Xml;
 using System.Xaml;
 using SpaceCG.Generic;
 using SpaceCG.Extensions;
-using System.Threading;
 using System.Configuration;
 using System.Windows.Media;
 using SpaceCG.Extensions.Modbus;
@@ -63,7 +62,7 @@ namespace MediaPlayerPro
         /// <summary> 当前播放器 </summary>
         private WPFSCPlayerPro CurrentPlayer;
         /// <summary> 控制接口 </summary>
-        private ReflectionInterface ControlInterface;
+        private ReflectionController ControlInterface;
 
         private XmlParserContext xmlParserContext;
         private XmlReaderSettings xmlReaderSettings;
@@ -79,7 +78,7 @@ namespace MediaPlayerPro
             this.Window = this;
             this.Title = "Meida Player Pro v1.2.20230620"; 
             LoggerWindow = new LoggerWindow();
-            ControlInterface = new ReflectionInterface(localPort);
+            ControlInterface = new ReflectionController(localPort);
             ControlInterface.AccessObjects.Add("Window", this.Window);
             ControlInterface.MethodFilters.Add("*.ReleaseCore");
             InstanceExtensions.ConvertChangeTypeExtension = ConvertChangeTypeExtension;
@@ -200,7 +199,7 @@ namespace MediaPlayerPro
             XElement Connections = RootConfiguration.Element(ConnectionManagement.XConnections);
             if (Connections != null)
             {
-                ConnectionManagement.Instance.Configuration(ControlInterface, Connections.Attribute(ReflectionInterface.XName)?.Value);
+                ConnectionManagement.Instance.Configuration(ControlInterface, Connections.Attribute(ReflectionController.XName)?.Value);
                 ConnectionManagement.Instance.TryParseElements(Connections.Descendants(ConnectionManagement.XConnection));
             }            
 
@@ -236,7 +235,7 @@ namespace MediaPlayerPro
                 {
                     if (element.Name.LocalName == XAction)
                     {
-                        ControlInterface.TryParseControlMessage(element, out object returnResult);
+                        ControlInterface.TryParseControlMessage(element);
                         continue;
                     }
 
@@ -304,7 +303,7 @@ namespace MediaPlayerPro
                     //Sub Element Actions                    
                     foreach (XElement action in element?.Elements(XAction))
                     {
-                        ControlInterface.TryParseControlMessage(action, out object returnResult);
+                        ControlInterface.TryParseControlMessage(action);
                     }
                 }
             }

@@ -43,10 +43,10 @@
       <HintPath>..\packages\NModbus4.Core.1.0.2\lib\netstandard2.0\NModbus4.Core.dll</HintPath>
     </Reference>
     <Reference Include="SpaceCG.Extensions.Modbus, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\SpaceCG.Extensions.Modbus.1.0.8\lib\netstandard2.0\SpaceCG.Extensions.Modbus.dll</HintPath>
+      <HintPath>..\packages\SpaceCG.Extensions.Modbus.1.0.10\lib\netstandard2.0\SpaceCG.Extensions.Modbus.dll</HintPath>
     </Reference>
-    <Reference Include="SpaceCG.Generic, Version=1.0.24.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\SpaceCG.Generic.1.0.24\lib\netstandard2.0\SpaceCG.Generic.dll</HintPath>
+    <Reference Include="SpaceCG.Generic, Version=1.0.29.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\SpaceCG.Generic.1.0.29\lib\netstandard2.0\SpaceCG.Generic.dll</HintPath>
     </Reference>
     <Reference Include="Sttplay.MediaPlayer">
       <HintPath>..\..\..\2023_BYD\BYD比亚迪主动悬架展品\BYD_DEMO\DEMO_CAR_P\bin\Release\Sttplay.MediaPlayer.dll</HintPath>

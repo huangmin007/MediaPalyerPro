@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using SpaceCG.Extensions;
 using SpaceCG.Extensions.Modbus;
 using SpaceCG.Generic;
@@ -89,7 +90,7 @@ namespace MediaPlayerPro
 
             RestartTimer();
             Log.Info($"OnKeyDown: {e.KeyboardDevice.Modifiers} - {e.Key}");
-
+            
             switch (e.Key)
             {
                 case Key.D0:

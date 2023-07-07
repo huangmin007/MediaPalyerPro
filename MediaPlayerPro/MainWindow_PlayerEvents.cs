@@ -109,7 +109,7 @@ namespace MediaPlayerPro
                 {
                     if (element.Name.LocalName == XAction)
                     {
-                        ControlInterface.TryParseControlMessage(element, out object returnResult);
+                        ControlInterface.TryParseControlMessage(element);
                     }
                     else
                     {
