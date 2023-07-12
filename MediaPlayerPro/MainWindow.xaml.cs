@@ -78,7 +78,7 @@ namespace MediaPlayerPro
             ushort localPort = ushort.TryParse(ConfigurationManager.AppSettings["Interface.LocalPort"], out ushort port) ? port : (ushort)2023;
 
             this.Window = this;
-            this.Title = "Meida Player Pro v1.2.20230620"; 
+            this.Title = "Meida Player Pro v1.2.1"; 
             LoggerWindow = new LoggerWindow();
             ControlInterface = new ReflectionController(localPort);
             ControlInterface.AccessObjects.Add("Window", this.Window);
