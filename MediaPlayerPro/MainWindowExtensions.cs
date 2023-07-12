@@ -246,7 +246,7 @@ namespace MediaPlayerPro
         /// 兼容性处理函数
         /// </summary>
         /// <param name="rootElements"></param>
-        [Obsolete("兼容性处理函数")]
+        [Obsolete("兼容性处理函数", false)]
         public static void CompatibleProcess(XElement rootElements)
         {
             //0.新旧元素节点名称的替换

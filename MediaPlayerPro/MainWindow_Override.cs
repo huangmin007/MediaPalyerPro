@@ -58,10 +58,8 @@ namespace MediaPlayerPro
             InstanceExtensions.RemoveInstanceEvents(ForegroundPlayer);
             InstanceExtensions.RemoveInstanceEvents(BackgroundPlayer);
 
-            this.Pause();
-            Timer?.Dispose();
-            LoggerWindow?.Close();
-            ControlInterface?.Dispose();
+            this.Pause();            
+            LoggerWindow?.Close();            
 
             NetworkSlave?.Dispose();
             NetworkMaster?.Dispose();
@@ -76,6 +74,10 @@ namespace MediaPlayerPro
         {
             base.OnClosed(e);
             Console.WriteLine("Closed ... ");
+
+            Timer?.Dispose();
+            hwndSource?.Dispose();
+            ControlInterface?.Dispose();
 
             MiddlePlayer?.ReleaseCore();
             ForegroundPlayer?.ReleaseCore();

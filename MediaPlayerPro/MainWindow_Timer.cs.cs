@@ -22,7 +22,7 @@ namespace MediaPlayerPro
                 Timer.Elapsed += Timer_Elapsed;
                 Timer.Interval = 1000;                
                 ControlInterface.AccessObjects.Add("Timer", Timer);
-                ControlInterface.NetworkMessageEvent += (s, e) => { RestartTimer(); };
+                ControlInterface.NetworkMessage += (s, e) => { RestartTimer(); };
             }
 
             Timer.Interval = int.TryParse(TimerElement?.Attribute("Interval")?.Value, out int interval) ? interval : 1000;

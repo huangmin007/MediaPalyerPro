@@ -16,6 +16,7 @@ using SpaceCG.Extensions;
 using System.Configuration;
 using System.Windows.Media;
 using SpaceCG.Extensions.Modbus;
+using System.Windows.Interop;
 
 namespace MediaPlayerPro
 {
@@ -68,6 +69,7 @@ namespace MediaPlayerPro
         private XmlReaderSettings xmlReaderSettings;
         private XamlXmlReaderSettings xamlXmlReaderSettings;
         private Stopwatch stopwatch = new Stopwatch();
+        private HwndSource hwndSource;
 
         public MainWindow()
         {
@@ -81,7 +83,7 @@ namespace MediaPlayerPro
             ControlInterface = new ReflectionController(localPort);
             ControlInterface.AccessObjects.Add("Window", this.Window);
             ControlInterface.MethodFilters.Add("*.ReleaseCore");
-            InstanceExtensions.ConvertChangeTypeExtension = ConvertChangeTypeExtension;
+            TypeExtensions.CustomConvertFromExtension = ConvertFromExtension;
 
             this.RootContainer.Width = this.Width;
             this.RootContainer.Height = this.Height;
@@ -143,6 +145,9 @@ namespace MediaPlayerPro
 
             LoadConfig(MEDIA_CONFIG_FILE);
             ProcessModule = MainWindowExtensions.CreateProcessModule("Process.FileName");
+
+            hwndSource = HwndSource.FromHwnd(new WindowInteropHelper(this).Handle);
+            hwndSource.DpiChanged += (s, ev) => { ev.Handled = true; };
         }
 
         /// <summary>
@@ -172,7 +177,7 @@ namespace MediaPlayerPro
                 MainWindowExtensions.CompatibleProcess(RootConfiguration);
                 MainWindowExtensions.CheckAndUpdateElements(RootConfiguration);
                 XElementExtensions.ReplaceTemplateElements(RootConfiguration, "Template", "RefTemplate", true);
-                Console.WriteLine(RootConfiguration);
+                //Console.WriteLine(RootConfiguration);
             }
             catch (Exception ex)
             {
@@ -410,33 +415,13 @@ namespace MediaPlayerPro
         /// 扩展类型转换
         /// </summary>
         /// <param name="value"></param>
-        /// <param name="conversionType"></param>
+        /// <param name="destinationType"></param>
         /// <param name="conversionValue"></param>
         /// <returns></returns>
-        public static bool ConvertChangeTypeExtension(object value, Type conversionType, out object conversionValue)
+        public static bool ConvertFromExtension(object value, Type destinationType, out object conversionValue)
         {
             conversionValue = null;
-            if (conversionType == null) return false;
-
-            if (value == null) return true;
-            if (value.GetType() == typeof(string))
-            {
-                string sValue = value.ToString();
-                if (String.IsNullOrWhiteSpace(sValue) || sValue.ToLower().Trim() == "null") return true;
-                
-                if (sValue.IndexOf('#') == 0 && conversionType == typeof(Brush))
-                {
-                    Color color = (Color)ColorConverter.ConvertFromString(sValue);
-                    conversionValue = new SolidColorBrush(color);
-                    return true;
-                }
-            }
-            else
-            {
-
-            }
-
-
+            
             return false;
         }
 
