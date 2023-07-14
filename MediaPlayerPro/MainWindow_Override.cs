@@ -51,9 +51,7 @@ namespace MediaPlayerPro
                 }
             }
 
-            ConnectionManagement.Dispose();
-            ModbusDeviceManagement.Dispose();
-
+            ConnectionManagement.Instance.Disconnections();
             InstanceExtensions.RemoveInstanceEvents(MiddlePlayer);
             InstanceExtensions.RemoveInstanceEvents(ForegroundPlayer);
             InstanceExtensions.RemoveInstanceEvents(BackgroundPlayer);
@@ -92,7 +90,7 @@ namespace MediaPlayerPro
 
             RestartTimer();
             Log.Info($"OnKeyDown: {e.KeyboardDevice.Modifiers} - {e.Key}");
-            
+
             switch (e.Key)
             {
                 case Key.D0:
@@ -122,6 +120,7 @@ namespace MediaPlayerPro
                         LoadItem((ushort)(e.Key - Key.NumPad0));
                     break;
 
+                case Key.R: if (e.KeyboardDevice.Modifiers == ModifierKeys.Control) LoadConfig(MEDIA_CONFIG_FILE); break;
                 case Key.F5: LoadConfig(MEDIA_CONFIG_FILE); break;
                 case Key.F6: this.Topmost = !this.Topmost; break;
                 case Key.F11:
@@ -143,9 +142,11 @@ namespace MediaPlayerPro
                     }
                     break;
 
-                case Key.T:  this.Topmost = !this.Topmost; break;
-                case Key.F:  this.WindowState = this.WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;  break;
-                case Key.S:  if (!this.AllowsTransparency)  this.WindowStyle = this.WindowStyle == WindowStyle.None ? WindowStyle.SingleBorderWindow : WindowStyle.None;  break;
+                case Key.T: this.Topmost = !this.Topmost; break;
+                case Key.F: this.WindowState = this.WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized; break;
+                case Key.S: if (!this.AllowsTransparency) this.WindowStyle = this.WindowStyle == WindowStyle.None ? WindowStyle.SingleBorderWindow : WindowStyle.None; break;
+                case Key.W: if(e.KeyboardDevice.Modifiers == ModifierKeys.Control)  OpenLoggerWindow(); break;
+
 
                 case Key.Left: PrevNode(); break;
                 case Key.Right: NextNode(); break;
@@ -154,17 +155,17 @@ namespace MediaPlayerPro
                 case Key.PageUp: PrevItem(); break;
 
                 case Key.Down:
-                case Key.PageDown: NextItem();   break;
+                case Key.PageDown: NextItem(); break;
 
                 case Key.VolumeUp: this.VolumeUp(); break;
                 case Key.VolumeDown: this.VolumeDown(); break;
 
-                case Key.Play: this.Play();  break;
-                case Key.Pause: this.Pause(); break;                    
+                case Key.Play: this.Play(); break;
+                case Key.Pause: this.Pause(); break;
                 case Key.MediaPlayPause: PlayPause(); break;
 
                 case Key.Space:
-                case Key.Enter: PlayPause();  break;
+                case Key.Enter: PlayPause(); break;
 
                 case Key.Escape:
                     this.Close();

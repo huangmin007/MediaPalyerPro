@@ -14,8 +14,6 @@ using System.Xaml;
 using SpaceCG.Generic;
 using SpaceCG.Extensions;
 using System.Configuration;
-using System.Windows.Media;
-using SpaceCG.Extensions.Modbus;
 using System.Windows.Interop;
 
 namespace MediaPlayerPro
@@ -48,7 +46,7 @@ namespace MediaPlayerPro
         private XElement RootConfiguration = null;
         protected IEnumerable<XElement> ItemElements;
         protected Boolean ListAutoLoop { get; set; } = false;
-        protected XElement Settings { get; private set; } = null;
+        //protected XElement Settings { get; private set; } = null;
         protected XElement CurrentItem { get; private set; } = null;
 
         /// <summary>
@@ -78,11 +76,17 @@ namespace MediaPlayerPro
             ushort localPort = ushort.TryParse(ConfigurationManager.AppSettings["Interface.LocalPort"], out ushort port) ? port : (ushort)2023;
 
             this.Window = this;
-            this.Title = "Meida Player Pro v1.2.1"; 
-            LoggerWindow = new LoggerWindow();
+            this.Title = "Meida Player Pro";
+            ProcessModule processModule = Process.GetCurrentProcess().MainModule;
+            if (processModule != null && !string.IsNullOrWhiteSpace(processModule.FileVersionInfo.FileVersion))
+            {
+                Title = $"{Title} v{processModule.FileVersionInfo.FileVersion}";
+            }
+            
             ControlInterface = new ReflectionController(localPort);
             ControlInterface.AccessObjects.Add("Window", this.Window);
             ControlInterface.MethodFilters.Add("*.ReleaseCore");
+            ControlInterface.PropertyFilters.Add("*.Content");
             TypeExtensions.CustomConvertFromExtension = ConvertFromExtension;
 
             this.RootContainer.Width = this.Width;
@@ -190,7 +194,7 @@ namespace MediaPlayerPro
                 return;
             }
 
-            Settings = RootConfiguration.Element("Settings");
+            XElement Settings = RootConfiguration.Element("Settings");
             if (Settings != null)
             {
                 XElement timerElement = Settings.Element("Timer");
@@ -200,25 +204,15 @@ namespace MediaPlayerPro
                 if (syncElement != null) InitializeNetworkSync(syncElement);
             }
 
-            ConnectionManagement.Dispose();
-            XElement Connections = RootConfiguration.Element(ConnectionManagement.XConnections);
-            if (Connections != null)
-            {
-                ConnectionManagement.Instance.Configuration(ControlInterface, Connections.Attribute(ReflectionController.XName)?.Value);
-                ConnectionManagement.Instance.TryParseElements(Connections.Descendants(ConnectionManagement.XConnection));
-            }            
+            ConnectionManagement.Instance.Disconnections();
+            ConnectionManagement.Instance.ReflectionController = this.ControlInterface;
+            XElement ConnectionsElement = RootConfiguration.Element(ConnectionManagement.XConnections);
+            if (ConnectionsElement != null) ConnectionManagement.Instance.TryParseConnectionConfiguration(ConnectionsElement);
 
-            ModbusDeviceManagement.Dispose();
-            IEnumerable<XElement> ModbusElements = RootConfiguration.Descendants(ModbusTransport.XModbus);
-            if (ModbusElements?.Count() > 0)
-            {
-                ModbusDeviceManagement.Instance.Configuration(ControlInterface, RootConfiguration.Attribute(nameof(ModbusDeviceManagement))?.Value);
-                ModbusDeviceManagement.Instance.TryParseElements(ModbusElements);
-            }
-            
-            ItemElements = RootConfiguration.Descendants("Item");
-            if (bool.TryParse(RootConfiguration.Attribute("AutoLoop")?.Value, out bool listAutoLoop)) ListAutoLoop = listAutoLoop;
-            if (int.TryParse(RootConfiguration.Attribute("DefaultID")?.Value, out int id)) LoadItem(id);
+            XElement ItemsElement = RootConfiguration.Element("Items");
+            ItemElements = ItemsElement?.Elements("Item");
+            if (bool.TryParse(ItemsElement?.Attribute("ListAutoLoop")?.Value, out bool listAutoLoop)) ListAutoLoop = listAutoLoop;
+            if (int.TryParse(ItemsElement?.Attribute("DefaultID")?.Value, out int id)) LoadItem(id);
         }
 
         /// <summary>

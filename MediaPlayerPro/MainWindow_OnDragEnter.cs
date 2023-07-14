@@ -40,5 +40,21 @@ namespace MediaPlayerPro
             MiddleContainer.Visibility = Visibility.Hidden;
             BackgroundContainer.Visibility = Visibility.Hidden;
         }
+
+        protected void OpenLoggerWindow()
+        {
+            if(this.LoggerWindow == null)
+            {
+                this.LoggerWindow = new LoggerWindow();
+                this.LoggerWindow.Closed += (s, e) => { this.LoggerWindow = null; };
+                this.LoggerWindow.Show();
+            }
+            
+            if(this.LoggerWindow != null)
+            {
+                this.LoggerWindow.Topmost = true;
+                this.LoggerWindow.Activate();
+            }
+        }
     }
 }

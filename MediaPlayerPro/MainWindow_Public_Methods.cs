@@ -269,9 +269,9 @@ namespace MediaPlayerPro
         /// <summary>
         /// Call Event Name From Item
         /// </summary>
-        /// <param name="eventName"></param>
         /// <param name="itemID"></param>
-        public void CallEventName(string eventName, string itemID)
+        /// <param name="eventName"></param>
+        public void CallEventName(string itemID, string eventName)
         {
             IEnumerable<XElement> events = from item in RootConfiguration.Descendants("Item")
                                            where item.Attribute("ID")?.Value == itemID
@@ -285,10 +285,10 @@ namespace MediaPlayerPro
         /// <summary>
         /// 调用 指定项 => 指定按扭容器 => 指定的按扭 => 事件或属性
         /// </summary>
-        /// <param name="buttonName"></param>
-        /// <param name="buttonContainer"></param>
         /// <param name="itemID">页面ID</param>
-        public void CallButtonEvent(string buttonName, string buttonContainer, string itemID)
+        /// <param name="buttonContainer"></param>
+        /// <param name="buttonName"></param>
+        public void CallButtonEvent(string itemID, string buttonContainer, string buttonName)
         {
             IEnumerable<XElement> events = from item in ItemElements
                                            where item.Attribute("ID")?.Value.Trim() == itemID
@@ -304,9 +304,9 @@ namespace MediaPlayerPro
         /// <summary>
         /// 调用 当前项(<see cref="CurrentItemID"/>) => 指定按扭容器 => 指定的按扭 => 事件或属性
         /// </summary>
-        /// <param name="buttonName"></param>
         /// <param name="buttonContainer"></param>
-        public void CallButtonEvent(string buttonName, string buttonContainer) => CallButtonEvent(buttonName, buttonContainer, CurrentItemID.ToString());
+        /// <param name="buttonName"></param>
+        public void CallButtonEvent(string buttonContainer, string buttonName) => CallButtonEvent(buttonName, buttonContainer, CurrentItemID.ToString());
         /// <summary>
         /// 调用 当前项(<see cref="CurrentItemID"/>) => 当前最顶端的显示按扭容器 => 指定的按扭 => 事件或属性
         /// </summary>
