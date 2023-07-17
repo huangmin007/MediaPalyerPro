@@ -37,7 +37,10 @@ namespace Test
         {
             InitializeComponent();
         }
+
+        Queue<int> queue = new Queue<int>(5);
         HwndSource hwndSource;
+
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             BitmapImage bitmapImage = new BitmapImage(new Uri(@"D:\Desktop\big\IMG_ (8).jpg"));
@@ -61,6 +64,16 @@ namespace Test
 
             //bool boo = (bool)TypeDescriptor.GetConverter(typeof(bool)).ConvertFrom(1);
             //Console.WriteLine(boo);
+
+            queue.Enqueue(0);
+            queue.Enqueue(1);
+            Console.WriteLine(queue.Count);
+            queue.Enqueue(2);
+            queue.Enqueue(3);
+            Console.WriteLine(queue.Count);
+            queue.Enqueue(4);
+            queue.Enqueue(5);
+            Console.WriteLine(queue.Count);
         }
 
         private void MainWindow_DpiChanged(object sender, DpiChangedEventArgs e)

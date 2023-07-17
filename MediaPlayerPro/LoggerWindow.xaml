@@ -5,8 +5,41 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MediaPlayerPro"
         mc:Ignorable="d"
-        Title="LoggerWindow" Height="450" Width="800" ResizeMode="NoResize" Loaded="Window_Loaded"  >
+        Title="Logger Browser Window" Height="720" Width="1280" Loaded="Window_Loaded">
+    <Window.Resources>
+
+        <Style TargetType="DataGridCell">
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="BorderThickness" Value="1" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <local:LevelConvert x:Key="levelConvert"/>
+        <local:BackgroundConvert x:Key="bgConvert"/>
+        <Style TargetType="DataGridRow">
+            <Setter Property="Background" Value="{Binding EventType, Converter={StaticResource bgConvert}}"/>
+        </Style>
+        
+    </Window.Resources>
     <Grid>
-        <TextBlock Text="等有空了在完善吧，不着急 ！！！" FontSize="30" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <DataGrid Name="DataGrid_Logger" AutoGenerateColumns="False" IsReadOnly="True" 
+                  CanUserSortColumns="False" CanUserResizeColumns="False" CanUserResizeRows="False" 
+                  SelectionMode="Single" SelectionUnit="FullRow"
+                  RowHeight="20" ItemsSource="{Binding}">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="DateTime" Width="90" Binding="{Binding DateTime, StringFormat=HH:mm:ss.fff }"/>
+                <DataGridTextColumn Header="Level" Width="50" Binding="{Binding EventType, Converter={StaticResource levelConvert} }"/>
+                <DataGridTextColumn Header="ID" Width="30" Binding="{Binding ID }"/>
+                <DataGridTextColumn Header="Source" Width="120" Binding="{Binding Source }"/>
+                <DataGridTextColumn Header="Message" Width="1*" Binding="{Binding Message }"/>
+            </DataGrid.Columns>
+            <DataGrid.RowDetailsTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding FormatMessage }" Margin="10" />
+                </DataTemplate>
+            </DataGrid.RowDetailsTemplate>
+        </DataGrid>
+        <TextBlock Text="等有空了在完善吧，不着急 ！！！" FontSize="30" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center"/>
     </Grid>
 </Window>
