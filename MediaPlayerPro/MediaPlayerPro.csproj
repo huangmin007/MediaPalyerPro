@@ -46,10 +46,11 @@
       <HintPath>..\packages\NModbus4.Core.1.0.2\lib\netstandard2.0\NModbus4.Core.dll</HintPath>
     </Reference>
     <Reference Include="SpaceCG.Extensions.Modbus, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\SpaceCG.Extensions.Modbus.1.0.12\lib\netstandard2.0\SpaceCG.Extensions.Modbus.dll</HintPath>
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\.NET_ProjectTemplate\ProjectLibraries\SpaceCG.Extensions.Modbus\bin\Release\netstandard2.0\SpaceCG.Extensions.Modbus.dll</HintPath>
     </Reference>
-    <Reference Include="SpaceCG.Generic, Version=1.1.37.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\SpaceCG.Generic.1.1.37\lib\netstandard2.0\SpaceCG.Generic.dll</HintPath>
+    <Reference Include="SpaceCG.Generic, Version=1.1.40.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\SpaceCG.Generic.1.1.40\lib\netstandard2.0\SpaceCG.Generic.dll</HintPath>
     </Reference>
     <Reference Include="Sttplay.MediaPlayer">
       <HintPath>..\..\..\2023_BYD\BYD比亚迪主动悬架展品\BYD_DEMO\DEMO_CAR_P\bin\Release\Sttplay.MediaPlayer.dll</HintPath>
@@ -135,8 +136,9 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <None Include="app.manifest" />
+    <None Include="MediaContents.Test.Config" />
     <None Include="MediaContents.Config">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="MediaContents.Sound.Config" />
     <None Include="packages.config" />

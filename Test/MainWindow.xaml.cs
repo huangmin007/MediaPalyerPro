@@ -43,13 +43,14 @@ namespace Test
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
+#if false
             BitmapImage bitmapImage = new BitmapImage(new Uri(@"D:\Desktop\big\IMG_ (8).jpg"));
             Image_Test.Source = bitmapImage;
 
             timer = new Timer(UpdateDisplay, this, 100, 30);
             Image_Test.RenderTransform = new TranslateTransform(0, 0);
             Image_Test.Clip = new RectangleGeometry(new Rect(0, 0, 300, 600), 0, 0);
-
+#endif
             hwndSource = HwndSource.FromHwnd(new WindowInteropHelper(this).Handle);
             hwndSource.DpiChanged += HwndSource_DpiChanged;
             //this.DpiChanged += MainWindow_DpiChanged;
@@ -87,32 +88,7 @@ namespace Test
             Console.WriteLine("hwnd dpi chanage....");
             e.Handled = true;
         }
-
-        int offset = 1;
-        private void UpdateDisplay(object obj)
-        {
-            this.Dispatcher.Invoke(() =>
-            {
-                RectangleGeometry rg = Image_Test.Clip as RectangleGeometry;
-                Rect rect = rg.Rect;
-
-                TranslateTransform tt = Image_Test.RenderTransform as TranslateTransform;
-                //Console.WriteLine($"TT.X: {tt.X}  Rect.X:{rect.X}  {Image_Test.ActualWidth}");
-                if(tt.X >= rect.X) offset = -1;
-
-                tt.X += offset;
-
-                //(rg.Transform as TranslateTransform).X -= offset;
-
-                rect.X -= offset;
-                rg.Rect = rect;
-
-                
-            });
-            
-        }
-
-        
+               
 
         protected override void OnContentChanged(object oldContent, object newContent)
         {
@@ -128,61 +104,25 @@ namespace Test
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             Button button = sender as Button;
-            if(button == Button_Connect)
-            {
-                Image_Test.RenderSize = new Size(500, 600);
-                //EllipseGeometry ellipse = new EllipseGeometry(new Point(0, 0), 0, 0);                
-                //Image_Test.Clip = new EllipseGeometry(new Point(0, 0), 0, 0, new TranslateTransform());
-                Image_Test.Clip = new RectangleGeometry(new Rect(100, 100, 200, 400));
-            }
-            else if(button == Button_Close)
-            {
-                (Image_Test.Clip as RectangleGeometry).Rect = new Rect(200, 100, 200, 400);
-            }
-            else if(button == Button_Write)
-            {
-                Image_Test.RenderTransform = new TranslateTransform(200, 100);
-            }
+           
         }
 
-        protected override void OnPreviewKeyDown(KeyEventArgs e)
+        private void MediaElement_Player_Loaded(object sender, RoutedEventArgs e)
         {
-            base.OnPreviewKeyDown(e);
-            Rect rect;
-            switch(e.Key)
-            {
+            (sender as MediaElement).Play();
+        }
 
-                case Key.Q:
-                    Image_Test.RenderTransform = new TranslateTransform(0, 0);
-                    Image_Test.Clip = new RectangleGeometry(new Rect(100, 0, 300, 600));
-                    break;
+        private void MediaElement_Player_MediaEnded(object sender, RoutedEventArgs e)
+        {
+            //(sender as MediaElement).Stop();
+            //(sender as MediaElement).Play();
 
-                case Key.A:
-                    rect = (Image_Test.Clip as RectangleGeometry).Rect;
-                    rect.X -= 1;
-                    (Image_Test.Clip as RectangleGeometry).Rect = rect;
-                    break;
-                case Key.D:
-                    rect = (Image_Test.Clip as RectangleGeometry).Rect;
-                    rect.X += 1;
-                    (Image_Test.Clip as RectangleGeometry).Rect = rect;
-                    break;
+            (sender as MediaElement).Position = TimeSpan.Zero;
+        }
 
-                case Key.Z:
-                    (Image_Test.RenderTransform as TranslateTransform).X -= 1;
-                    rect = (Image_Test.Clip as RectangleGeometry).Rect;
-                    rect.X += 1;
-                    (Image_Test.Clip as RectangleGeometry).Rect = rect;
-                    break;
-                case Key.X:
-                    (Image_Test.RenderTransform as TranslateTransform).X += 1;
-                    //Console.WriteLine((Image_Test.RenderTransform as TranslateTransform).X);
-                    rect = (Image_Test.Clip as RectangleGeometry).Rect;
-                    rect.X -= 1;
-                    //Console.WriteLine($"Rect::{rect.X}");
-                    (Image_Test.Clip as RectangleGeometry).Rect = rect;
-                    break;
-            }
+        private void MediaElement_Player_Unloaded(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

@@ -74,7 +74,7 @@
 
         <Grid Name="RootContainer" Focusable="False" Width="1280" Height="720" Background="#FF000000" MouseDown="UIElement_MouseDown" >
             <!-- Background -->
-            <Grid x:Name="BackgroundContainer" Visibility="Visible" Background="#FF000000" IsVisibleChanged="UIElement_IsVisibleChanged">
+            <Grid x:Name="BackgroundContainer" Visibility="Visible" IsVisibleChanged="UIElement_IsVisibleChanged">
                 <sttplay:WPFSCPlayerPro x:Name="BackgroundPlayer"
                     OpenMode="Link" AutoOpen="True" OpenAndPlay="True" Loop="True" Volume="0.8"
                     
@@ -90,12 +90,11 @@
             </Grid>
 
             <!-- Middle -->
-            <Grid x:Name="MiddleContainer" Visibility="Hidden" Background="#FF000000" IsVisibleChanged="UIElement_IsVisibleChanged">
+            <Grid x:Name="MiddleContainer" Visibility="Hidden" IsVisibleChanged="UIElement_IsVisibleChanged">
                 <sttplay:WPFSCPlayerPro x:Name="MiddlePlayer"
                     OpenMode="Link" AutoOpen="True" OpenAndPlay="True" Loop="True" Volume="0.8"
                                         
-                    IsVisibleChanged="UIElement_IsVisibleChanged"
-                                        
+                    IsVisibleChanged="UIElement_IsVisibleChanged"                                        
                     onCaptureOpenCallbackEvent="OnCaptureOpenCallbackEvent"
                     onRenderVideoFrameEvent="OnRenderVideoFrameEventHandler"
                     onStreamFinishedEvent="OnStreamFinishedEventHandler"
@@ -106,12 +105,11 @@
             </Grid>
 
             <!-- Foreground -->
-            <Grid x:Name="ForegroundContainer" Visibility="Hidden" Background="#FF000000" IsVisibleChanged="UIElement_IsVisibleChanged">
+            <Grid x:Name="ForegroundContainer" Visibility="Hidden" IsVisibleChanged="UIElement_IsVisibleChanged">
                 <sttplay:WPFSCPlayerPro x:Name="ForegroundPlayer" 
                     OpenMode="Link" AutoOpen="True" OpenAndPlay="True" Loop="True" Volume="0.8"  
                                         
-                    IsVisibleChanged="UIElement_IsVisibleChanged"
-                                        
+                    IsVisibleChanged="UIElement_IsVisibleChanged"                                        
                     onCaptureOpenCallbackEvent="OnCaptureOpenCallbackEvent"
                     onRenderVideoFrameEvent="OnRenderVideoFrameEventHandler"
                     onStreamFinishedEvent="OnStreamFinishedEventHandler"

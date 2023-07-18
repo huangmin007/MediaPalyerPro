@@ -259,13 +259,13 @@ namespace MediaPlayerPro
 
                     if (uiElement.ToolTip != element)
                     {
-                        //WPFSCPlayerPro.Close()
                         if (uiElement.GetType() == typeof(WPFSCPlayerPro) && uiElement.Name.IndexOf(PLAYER) != -1)
                         {
                             WPFSCPlayerPro WPFPlayer = (WPFSCPlayerPro)uiElement;
                             Console.WriteLine($"{WPFPlayer.Name} Source: {WPFPlayer.Source}  Url: {WPFPlayer.Url}");
 
                             if (MainWindowExtensions.IsVideoFile(WPFPlayer.Url)) WPFPlayer.Close();
+                            WPFPlayer.Url = null;
                             WPFPlayer.Source = null;
                         }
 
@@ -311,15 +311,15 @@ namespace MediaPlayerPro
                 Log.Error($"配置解析或是执行异常：{ex}");
                 MessageBox.Show($"配置解析或是执行异常：\r\n{ex}", "Error", MessageBoxButton.OK);
             }
-
+#if false
             if (CurrentPlayer != null && MainWindowExtensions.IsVideoFile(CurrentPlayer.Url))
             {
                 if ((CurrentPlayer.AutoOpen || CurrentPlayer.OpenAndPlay) && !CurrentPlayer.OpenSuccessed)
-                    CurrentPlayer.Open(MediaType.Link, null);
+                    CurrentPlayer.Open();
                 else
                     CurrentPlayer.Play();
             }
-
+#endif
             stopwatch.Stop();
             Log.Info($"Load And Analyse Item XElement use {stopwatch.ElapsedMilliseconds} ms");
 
