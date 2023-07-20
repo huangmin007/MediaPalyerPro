@@ -241,12 +241,12 @@ namespace MediaPlayerPro
                 }
             }
         }
-
+#if false
         /// <summary>
         /// 兼容性处理函数
         /// </summary>
         /// <param name="rootElements"></param>
-        [Obsolete("兼容性处理函数", false)]
+        [Obsolete("兼容性处理函数", true)]
         public static void CompatibleProcess(XElement rootElements)
         {
             //0.新旧元素节点名称的替换
@@ -286,7 +286,7 @@ namespace MediaPlayerPro
                 }
             }
         }
-
+#endif
         /// <summary>
         /// 重启计时器
         /// </summary>

@@ -19,11 +19,8 @@ namespace MediaPlayerPro
 
                 if (MainWindowExtensions.IsVideoFile(fileName) || MainWindowExtensions.IsImageFile(fileName))
                 {
-                    ForegroundPlayer.Close();
-                    ForegroundPlayer.Visibility = Visibility.Visible;
-                    ForegroundContainer.Visibility = Visibility.Visible;
-
                     ForegroundPlayer.Open(MediaType.Link, fileName);
+                    ForegroundPlayer.Visibility = Visibility.Visible;
                 }
                 else
                 {
@@ -37,8 +34,8 @@ namespace MediaPlayerPro
                 return;
             }
 
-            MiddleContainer.Visibility = Visibility.Hidden;
-            BackgroundContainer.Visibility = Visibility.Hidden;
+            MiddlePlayer.Visibility = Visibility.Hidden;
+            BackgroundPlayer.Visibility = Visibility.Hidden;
         }
 
         protected void OpenLoggerWindow()

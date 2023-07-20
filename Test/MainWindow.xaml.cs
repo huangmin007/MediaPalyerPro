@@ -31,75 +31,31 @@ namespace Test
     public partial class MainWindow : Window
     {
         static readonly LoggerTrace Logger = new LoggerTrace();
-        private Timer timer;
 
         public MainWindow()
         {
             InitializeComponent();
         }
 
-        Queue<int> queue = new Queue<int>(5);
-        HwndSource hwndSource;
+        protected override void OnKeyDown(KeyEventArgs e)
+        {
+            base.OnKeyDown(e);
+            switch(e.Key)
+            {
+                case Key.A:
+                    Console.WriteLine("----");
+                    Console.WriteLine(Image_Test.RenderSize);
+                    Console.WriteLine(Image_Test.DesiredSize);
+                    break;
+            }
+        }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-#if false
-            BitmapImage bitmapImage = new BitmapImage(new Uri(@"D:\Desktop\big\IMG_ (8).jpg"));
-            Image_Test.Source = bitmapImage;
-
-            timer = new Timer(UpdateDisplay, this, 100, 30);
-            Image_Test.RenderTransform = new TranslateTransform(0, 0);
-            Image_Test.Clip = new RectangleGeometry(new Rect(0, 0, 300, 600), 0, 0);
-#endif
-            hwndSource = HwndSource.FromHwnd(new WindowInteropHelper(this).Handle);
-            hwndSource.DpiChanged += HwndSource_DpiChanged;
-            //this.DpiChanged += MainWindow_DpiChanged;
-
-            Color c = (Color)TypeDescriptor.GetConverter(typeof(Color)).ConvertFromString("#FF00FF00");
-            this.Background = new SolidColorBrush(c);
-            bool b = TypeDescriptor.GetConverter(typeof(WindowStyle)).IsValid("singleborderwindow");
-            Console.WriteLine(b);
-
-            byte i = (byte)TypeDescriptor.GetConverter(typeof(byte)).ConvertFromString("0x10");
-            Console.WriteLine(i);
-
-            //bool boo = (bool)TypeDescriptor.GetConverter(typeof(bool)).ConvertFrom(1);
-            //Console.WriteLine(boo);
-
-            queue.Enqueue(0);
-            queue.Enqueue(1);
-            Console.WriteLine(queue.Count);
-            queue.Enqueue(2);
-            queue.Enqueue(3);
-            Console.WriteLine(queue.Count);
-            queue.Enqueue(4);
-            queue.Enqueue(5);
-            Console.WriteLine(queue.Count);
+            Console.WriteLine(Image_Test.RenderSize);
+            Console.WriteLine(Image_Test.DesiredSize);
         }
 
-        private void MainWindow_DpiChanged(object sender, DpiChangedEventArgs e)
-        {
-            e.Handled = true;
-            Console.WriteLine("win dpi chanage....");
-        }
-
-        private void HwndSource_DpiChanged(object sender, HwndDpiChangedEventArgs e)
-        {
-            Console.WriteLine("hwnd dpi chanage....");
-            e.Handled = true;
-        }
-               
-
-        protected override void OnContentChanged(object oldContent, object newContent)
-        {
-            base.OnContentChanged(oldContent, newContent);
-        }
-
-        protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi)
-        {
-
-        }
-        
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
@@ -107,22 +63,5 @@ namespace Test
            
         }
 
-        private void MediaElement_Player_Loaded(object sender, RoutedEventArgs e)
-        {
-            (sender as MediaElement).Play();
-        }
-
-        private void MediaElement_Player_MediaEnded(object sender, RoutedEventArgs e)
-        {
-            //(sender as MediaElement).Stop();
-            //(sender as MediaElement).Play();
-
-            (sender as MediaElement).Position = TimeSpan.Zero;
-        }
-
-        private void MediaElement_Player_Unloaded(object sender, RoutedEventArgs e)
-        {
-
-        }
     }
 }

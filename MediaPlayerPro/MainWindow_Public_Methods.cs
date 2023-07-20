@@ -73,7 +73,7 @@ namespace MediaPlayerPro
         /// </summary>
         public void VolumeUp()
         {
-            float volume = CurrentPlayer.Volume;
+            float volume = CurrentPlayer != null ? CurrentPlayer.Volume : BackgroundPlayer.Volume;
             volume = volume + 0.1f >= 1.0f ? 1.0f : volume + 0.1f;
 
             MiddlePlayer.Volume = volume;
@@ -85,7 +85,7 @@ namespace MediaPlayerPro
         /// </summary>
         public void VolumeDown()
         {
-            float volume = CurrentPlayer.Volume;
+            float volume = CurrentPlayer != null ? CurrentPlayer.Volume : BackgroundPlayer.Volume;
             volume = volume - 0.1f <= 0.0f ? 0.0f : volume - 0.1f;
 
             MiddlePlayer.Volume = volume;
@@ -98,7 +98,7 @@ namespace MediaPlayerPro
         /// </summary>
         public void NextItem()
         {
-            if (CurrentItem == null) return;
+            if (ItemElements?.Count() <= 0 || CurrentItem == null) return;
 
             //向下查找 Item
             int nextId = CurrentItemID + 1;
@@ -117,7 +117,7 @@ namespace MediaPlayerPro
         /// <param name="logicLoop">逻辑循环，如果没找到下一个项，则往上查找同级第一个项</param>
         public void NextItem(bool logicLoop)
         {
-            if (CurrentItem == null) return;
+            if (ItemElements?.Count() <= 0 || CurrentItem == null) return;
 
             //向下查找 Item
             int nextId = CurrentItemID + 1;
@@ -153,7 +153,7 @@ namespace MediaPlayerPro
         /// </summary>
         public void PrevItem()
         {
-            if (CurrentItem == null) return;
+            if (ItemElements?.Count() <= 0 || CurrentItem == null) return;
 
             //向上查找 Item
             int prevId = CurrentItemID - 1;
@@ -172,7 +172,7 @@ namespace MediaPlayerPro
         /// <param name="logicLoop">逻辑循环，如果没找到上一个项，则往下查找同级最后一个项</param>
         public void PrevItem(bool logicLoop)
         {
-            if (CurrentItem == null) return;
+            if (ItemElements?.Count() <= 0 || CurrentItem == null) return;
 
             //向上查找 Item
             int prevId = CurrentItemID - 1;
@@ -208,7 +208,7 @@ namespace MediaPlayerPro
         /// </summary>
         public void NextNode()
         {
-            if (CurrentItem == null) return;
+            if (ItemElements?.Count() <= 0 || CurrentItem == null) return;
 
             if (CurrentItem.NextNode != null)
                 LoadItem((XElement)CurrentItem.NextNode);
@@ -220,7 +220,7 @@ namespace MediaPlayerPro
         /// </summary>
         public void PrevNode()
         {
-            if (CurrentItem == null) return;
+            if (ItemElements?.Count() <= 0 || CurrentItem == null) return;
             if (CurrentItem.PreviousNode != null)
                 LoadItem((XElement)CurrentItem.PreviousNode);
             else
@@ -253,7 +253,6 @@ namespace MediaPlayerPro
             CurrentPlayer.Pause();
         }
 
-
         /// <summary>
         /// Call Event Name
         /// </summary>
@@ -271,10 +270,10 @@ namespace MediaPlayerPro
         /// </summary>
         /// <param name="itemID"></param>
         /// <param name="eventName"></param>
-        public void CallEventName(string itemID, string eventName)
+        public void CallEventName(int itemID, string eventName)
         {
             IEnumerable<XElement> events = from item in RootConfiguration.Descendants("Item")
-                                           where item.Attribute("ID")?.Value == itemID
+                                           where item.Attribute("ID")?.Value == itemID.ToString()
                                            from evt in item.Descendants(XEvent)
                                            where evt.Attribute("Name")?.Value == eventName
                                            select evt;
@@ -283,42 +282,29 @@ namespace MediaPlayerPro
         }
 
         /// <summary>
-        /// 调用 指定项 => 指定按扭容器 => 指定的按扭 => 事件或属性
+        /// 调用 指定项 => 指定的按扭 => 事件或属性
         /// </summary>
         /// <param name="itemID">页面ID</param>
-        /// <param name="buttonContainer"></param>
         /// <param name="buttonName"></param>
-        public void CallButtonEvent(string itemID, string buttonContainer, string buttonName)
+        public void CallButtonEvent(int itemID, string buttonName)
         {
             IEnumerable<XElement> events = from item in ItemElements
-                                           where item.Attribute("ID")?.Value.Trim() == itemID
-                                           from container in item.Elements(buttonContainer)
+                                           where item.Attribute("ID")?.Value.Trim() == itemID.ToString()
+                                           from container in item.Elements(ButtonContainer.Name)
                                            from evt in container.Elements(XEvent)
                                            where evt.Attribute(XType)?.Value.Trim() == "Click" && evt.Attribute("Element")?.Value.Trim() == buttonName
                                            select evt;
 
-            Log.Info($"CallButtonEvent: ItemID: {itemID}  ButtonContainer:{buttonContainer}  ButtonName: {buttonName}  Count: {events?.Count()}");
+            Log.Info($"CallButtonEvent: ItemID: {itemID}  ButtonContainer:{ButtonContainer.Name}  ButtonName: {buttonName}  Count: {events?.Count()}");
 
             CallEventElements(events);
         }
         /// <summary>
-        /// 调用 当前项(<see cref="CurrentItemID"/>) => 指定按扭容器 => 指定的按扭 => 事件或属性
-        /// </summary>
-        /// <param name="buttonContainer"></param>
-        /// <param name="buttonName"></param>
-        public void CallButtonEvent(string buttonContainer, string buttonName) => CallButtonEvent(buttonName, buttonContainer, CurrentItemID.ToString());
-        /// <summary>
         /// 调用 当前项(<see cref="CurrentItemID"/>) => 当前最顶端的显示按扭容器 => 指定的按扭 => 事件或属性
         /// </summary>
         /// <param name="buttonName"></param>
-        public void CallButtonEvent(string buttonName)
-        {
-            var btnContainer = ForegroundContainer.Visibility == Visibility.Visible && ForegroundButtons.Visibility == Visibility.Visible ? ForegroundButtons :
-                               MiddleContainer.Visibility == Visibility.Visible && MiddleButtons.Visibility == Visibility.Visible ? MiddleButtons :
-                               BackgroundContainer.Visibility == Visibility.Visible && BackgroundButtons.Visibility == Visibility.Visible ? BackgroundButtons : null;
-
-            CallButtonEvent(buttonName, btnContainer.Name, CurrentItemID.ToString());
-        }
+        public void CallButtonEvent(string buttonName) => CallButtonEvent(CurrentItemID, buttonName);
+        
 
         public void Sleep(int ms)
         {

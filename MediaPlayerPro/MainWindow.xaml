@@ -23,7 +23,7 @@
             <Setter Property="Background" Value="#640000FF"/>
             <Setter Property="Foreground" Value="#6400FF00"/>
             <Setter Property="ToolTipService.IsEnabled" Value="False"/>
-            <EventSetter Event="Click" Handler="Button_Click"/>
+            <!--EventSetter Event="Click" Handler="Button_Click"/-->
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -62,7 +62,8 @@
         </Style>
 
         <Style TargetType="sttplay:WPFSCPlayerPro">
-            <Setter Property="Stretch" Value="Uniform"/>
+            <Setter Property="Stretch" Value="Fill"/>
+            <Setter Property="IsEnabled" Value="False"/>
             <Setter Property="UseLayoutRounding" Value="True"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="HorizontalAlignment" Value="Center"/>
@@ -70,57 +71,12 @@
         </Style>
 
     </Window.Resources>
-    <Viewbox Name="ViewboxContainer" Stretch="Uniform" ClipToBounds="True" Focusable="False">
-
-        <Grid Name="RootContainer" Focusable="False" Width="1280" Height="720" Background="#FF000000" MouseDown="UIElement_MouseDown" >
-            <!-- Background -->
-            <Grid x:Name="BackgroundContainer" Visibility="Visible" IsVisibleChanged="UIElement_IsVisibleChanged">
-                <sttplay:WPFSCPlayerPro x:Name="BackgroundPlayer"
-                    OpenMode="Link" AutoOpen="True" OpenAndPlay="True" Loop="True" Volume="0.8"
-                    
-                    IsVisibleChanged="UIElement_IsVisibleChanged"
-                    onCaptureOpenCallbackEvent="OnCaptureOpenCallbackEvent"
-                    onRenderVideoFrameEvent="OnRenderVideoFrameEventHandler"
-                    onStreamFinishedEvent="OnStreamFinishedEventHandler"
-                    onFirstFrameRenderEvent="OnFirstFrameRenderEventHandler"
-                    onRenderAudioFrameEvent="OnRenderAudioFrameEventHandler"
-                    />
-
-                <Canvas x:Name="BackgroundButtons" IsVisibleChanged="UIElement_IsVisibleChanged"></Canvas>
-            </Grid>
-
-            <!-- Middle -->
-            <Grid x:Name="MiddleContainer" Visibility="Hidden" IsVisibleChanged="UIElement_IsVisibleChanged">
-                <sttplay:WPFSCPlayerPro x:Name="MiddlePlayer"
-                    OpenMode="Link" AutoOpen="True" OpenAndPlay="True" Loop="True" Volume="0.8"
-                                        
-                    IsVisibleChanged="UIElement_IsVisibleChanged"                                        
-                    onCaptureOpenCallbackEvent="OnCaptureOpenCallbackEvent"
-                    onRenderVideoFrameEvent="OnRenderVideoFrameEventHandler"
-                    onStreamFinishedEvent="OnStreamFinishedEventHandler"
-                    onFirstFrameRenderEvent="OnFirstFrameRenderEventHandler"
-                    />
-
-                <Canvas x:Name="MiddleButtons" IsVisibleChanged="UIElement_IsVisibleChanged"></Canvas>
-            </Grid>
-
-            <!-- Foreground -->
-            <Grid x:Name="ForegroundContainer" Visibility="Hidden" IsVisibleChanged="UIElement_IsVisibleChanged">
-                <sttplay:WPFSCPlayerPro x:Name="ForegroundPlayer" 
-                    OpenMode="Link" AutoOpen="True" OpenAndPlay="True" Loop="True" Volume="0.8"  
-                                        
-                    IsVisibleChanged="UIElement_IsVisibleChanged"                                        
-                    onCaptureOpenCallbackEvent="OnCaptureOpenCallbackEvent"
-                    onRenderVideoFrameEvent="OnRenderVideoFrameEventHandler"
-                    onStreamFinishedEvent="OnStreamFinishedEventHandler"
-                    onFirstFrameRenderEvent="OnFirstFrameRenderEventHandler"
-                    />
-
-                <Canvas x:Name="ForegroundButtons" IsVisibleChanged="UIElement_IsVisibleChanged">
-                </Canvas>
-            </Grid>
-        
+    <Viewbox Name="ViewboxContainer" Stretch="Fill" ClipToBounds="True" Focusable="False">
+        <Grid Name="RootContainer" Focusable="False" Width="1280" Height="720" Background="#FF000000" PreviewMouseDown="UIElement_PreviewMouseDown">
+            <sttplay:WPFSCPlayerPro x:Name="BackgroundPlayer" />
+            <sttplay:WPFSCPlayerPro x:Name="MiddlePlayer"  />
+            <sttplay:WPFSCPlayerPro x:Name="ForegroundPlayer" />
+            <Canvas x:Name="ButtonContainer" Background="#00000000" PreviewMouseDown="UIElement_PreviewMouseDown"/>
         </Grid>
-    
     </Viewbox>
 </Window>

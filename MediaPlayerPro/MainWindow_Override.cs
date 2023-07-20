@@ -2,41 +2,15 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
 using SpaceCG.Extensions;
-using SpaceCG.Extensions.Modbus;
 using SpaceCG.Generic;
+using Sttplay.MediaPlayer;
 
 namespace MediaPlayerPro
 {
     public partial class MainWindow : Window
     {
-        /// <inheritdoc/>
-        protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
-        {
-            base.OnRenderSizeChanged(sizeInfo);
-
-#if false
-            this.RootContainer.Width = this.Width;
-            this.RootContainer.Height = this.Height;
-            foreach (FrameworkElement child in LogicalTreeHelper.GetChildren(RootContainer))
-            {
-                child.Width = this.Width;
-                child.Height = this.Height;
-                child.SetValue(ToolTipService.IsEnabledProperty, false);
-                foreach (FrameworkElement subChild in LogicalTreeHelper.GetChildren(child))
-                {
-                    if (subChild.GetType() == typeof(Canvas)) continue;
-                    subChild.Width = this.Width;
-                    subChild.Height = this.Height;
-                    subChild.SetValue(ToolTipService.IsEnabledProperty, false);
-                }
-            }
-#endif
-        }
-
         /// <inheritdoc/>
         protected override void OnClosing(CancelEventArgs e)
         {
@@ -44,11 +18,8 @@ namespace MediaPlayerPro
             Console.WriteLine("Closing ... ");
             foreach (FrameworkElement child in LogicalTreeHelper.GetChildren(RootContainer))
             {
-                child.IsVisibleChanged -= UIElement_IsVisibleChanged;
-                foreach (FrameworkElement subChild in LogicalTreeHelper.GetChildren(child))
-                {
-                    subChild.IsVisibleChanged -= UIElement_IsVisibleChanged;
-                }
+                if(child is WPFSCPlayerPro)
+                    child.IsVisibleChanged -= WPFSCPlayerPro_IsVisibleChanged;
             }
 
             ConnectionManagement.Instance.Disconnections();
@@ -146,7 +117,6 @@ namespace MediaPlayerPro
                 case Key.F: this.WindowState = this.WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized; break;
                 case Key.S: if (!this.AllowsTransparency) this.WindowStyle = this.WindowStyle == WindowStyle.None ? WindowStyle.SingleBorderWindow : WindowStyle.None; break;
                 case Key.W: if(e.KeyboardDevice.Modifiers == ModifierKeys.Control)  OpenLoggerWindow(); break;
-
 
                 case Key.Left: PrevNode(); break;
                 case Key.Right: NextNode(); break;
