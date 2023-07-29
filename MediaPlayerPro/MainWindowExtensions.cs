@@ -218,7 +218,7 @@ namespace MediaPlayerPro
         /// 检查更新元素，移除或是修改的属性的值，以保持格式的正确性
         /// </summary>
         /// <param name="rootElements"></param>
-        public static void CheckAndUpdateElements(XElement rootElements)
+        public static void CheckAndUpdateElements(this XElement rootElements)
         {
             foreach (XElement element in rootElements.Descendants())
             {

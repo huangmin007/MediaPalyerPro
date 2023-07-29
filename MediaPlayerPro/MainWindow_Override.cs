@@ -2,6 +2,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using SpaceCG.Extensions;
 using SpaceCG.Generic;
@@ -145,11 +146,41 @@ namespace MediaPlayerPro
         }
 
         /// <inheritdoc/>
-        protected override void OnPreviewMouseDown(MouseButtonEventArgs e)
+        protected override void OnPreviewMouseLeftButtonDown(MouseButtonEventArgs e)
         {
             RestartTimer();
-            base.OnPreviewMouseDown(e);
-            if (Log.IsDebugEnabled) Log.Debug($"On Preview Mouse Down");
+            base.OnPreviewMouseLeftButtonDown(e);
+            Console.WriteLine($"OnPreviewMouseLeftButtonDown::{e.ButtonState} {e.Timestamp} {e.GetPosition(this)}");
+
+            if (e.ClickCount == 1)
+            {
+                string elementType = e.Source.GetType().Name;
+                string elementName = (e.Source as FrameworkElement)?.Name;
+                e.Handled = CallFrameworkElementEvent("MouseDown", elementType, elementName);
+            }
+            else if (e.ClickCount == 2)
+            {
+                if (e.Source is Canvas || e.Source is Grid)
+                {
+                    this.PlayPause();
+                    e.Handled = true;
+                }
+            }
+        }
+
+        /// <inheritdoc/>
+        protected override void OnPreviewMouseLeftButtonUp(MouseButtonEventArgs e)
+        {
+            RestartTimer();
+            base.OnPreviewMouseLeftButtonUp(e);
+            Console.WriteLine($"OnPreviewMouseLeftButtonUp::{e.ButtonState} {e.Timestamp} {e.GetPosition(this)}");
+
+            if (e.ClickCount == 1)
+            {
+                string elementType = e.Source.GetType().Name;
+                string elementName = (e.Source as FrameworkElement)?.Name;
+                e.Handled = CallFrameworkElementEvent("MouseUp", elementType, elementName);
+            }
         }
 
     }

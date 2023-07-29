@@ -345,28 +345,7 @@ namespace MediaPlayerPro
                             MiddlePlayer.Visibility == Visibility.Visible ? MiddlePlayer :
                             BackgroundPlayer.Visibility == Visibility.Visible ? BackgroundPlayer : null;
         }
-        private void UIElement_PreviewMouseDown(object sender, MouseButtonEventArgs e)
-        {
-            Console.WriteLine($"UIElement_PreviewMouseDown：{e.Source}");
-
-            if (e.Source is Button && e.ChangedButton == MouseButton.Left)
-            {
-                Button button = (Button)e.Source;
-                Log.Info($"Click Button: {button.Name}  ToolTip: {button.ToolTip}");
-
-                e.Handled = true;
-                CallButtonEvent(button.Name);            
-            }
-            else if (e.Source is Canvas || e.Source is Grid)
-            {
-                if (e.ChangedButton == MouseButton.Left && e.ClickCount == 2)
-                {
-                    this.PlayPause();
-                    e.Handled = true;
-                }
-            }
-        }
-
+        
         /// <summary>
         /// 扩展类型转换
         /// </summary>

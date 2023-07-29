@@ -292,11 +292,10 @@ namespace MediaPlayerPro
                                            where item.Attribute("ID")?.Value.Trim() == itemID.ToString()
                                            from container in item.Elements(ButtonContainer.Name)
                                            from evt in container.Elements(XEvent)
-                                           where evt.Attribute(XType)?.Value.Trim() == "Click" && evt.Attribute("Element")?.Value.Trim() == buttonName
+                                           where evt.Attribute(XType)?.Value.Trim() == "Click" && evt.Attribute("ElementName")?.Value.Trim() == buttonName
                                            select evt;
 
             Log.Info($"CallButtonEvent: ItemID: {itemID}  ButtonContainer:{ButtonContainer.Name}  ButtonName: {buttonName}  Count: {events?.Count()}");
-
             CallEventElements(events);
         }
         /// <summary>
@@ -304,7 +303,35 @@ namespace MediaPlayerPro
         /// </summary>
         /// <param name="buttonName"></param>
         public void CallButtonEvent(string buttonName) => CallButtonEvent(CurrentItemID, buttonName);
-        
+
+        /// <summary>
+        /// 调用显示元素事件
+        /// </summary>
+        /// <param name="itemID"></param>
+        /// <param name="eventType"></param>
+        /// <param name="elementType"></param>
+        /// <param name="elementName"></param>
+        public bool CallFrameworkElementEvent(int itemID, string eventType, string elementType, string elementName)
+        {
+            IEnumerable<XElement> events = from item in ItemElements
+                                           where item.Attribute("ID")?.Value.Trim() == itemID.ToString()
+                                           from evt in item.Descendants(XEvent)
+                                           where evt.Attribute(XType)?.Value.Trim() == eventType && 
+                                           evt.Attribute("ElementType")?.Value.Trim() == elementType && 
+                                           evt.Attribute("ElementName")?.Value.Trim() == elementName
+                                           select evt;
+
+            Log.Info($"ItemID: {itemID}  EventType:{eventType}  ElementType:{elementType}  ElementName: {elementName}  EventCount: {events?.Count()}");
+            if (events?.Count() > 0) CallEventElements(events);
+            return events?.Count() > 0;
+        }
+        /// <summary>
+        /// 调用显示元素事件
+        /// </summary>
+        /// <param name="eventType"></param>
+        /// <param name="elementType"></param>
+        /// <param name="elementName"></param>
+        public bool CallFrameworkElementEvent(string eventType, string elementType, string elementName) => CallFrameworkElementEvent(CurrentItemID, eventType, elementType, elementName);
 
         public void Sleep(int ms)
         {
@@ -320,7 +347,7 @@ namespace MediaPlayerPro
         }
 
         /// <summary>
-        /// Call Event Elements
+        /// Call Event XML Elements
         /// </summary>
         /// <param name="events"></param>
         protected void CallEventElements(IEnumerable<XElement> events)

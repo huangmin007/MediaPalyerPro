@@ -54,6 +54,8 @@ namespace Test
         {
             Console.WriteLine(Image_Test.RenderSize);
             Console.WriteLine(Image_Test.DesiredSize);
+
+            BackgroundPlayer.Open(Sttplay.MediaPlayer.MediaType.Link, "https://cdn9003.iflyos.cn/audio/story/animal/280207.mp3");
         }
 
 

@@ -3,9 +3,20 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:Test"
+        xmlns:local="clr-namespace:Test" xmlns:sttplay="clr-namespace:Sttplay.MediaPlayer;assembly=Sttplay.MediaPlayer"
         mc:Ignorable="d" Name="_window"
         Title="MainWindow" Height="450" Width="800" Loaded="Window_Loaded">
+    <Window.Resources>
+        <Style TargetType="sttplay:WPFSCPlayerPro">
+            <Setter Property="Stretch" Value="Fill"/>
+            <Setter Property="IsEnabled" Value="False"/>
+            <Setter Property="UseLayoutRounding" Value="True"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality"/>
+        </Style>
+    </Window.Resources>
+    
     <Viewbox Stretch="Fill" ClipToBounds="True" Focusable="False">
         <Grid Name="RootGroup" Focusable="False" Width="800" Height="450">
             <Grid.Background>
@@ -14,7 +25,8 @@
             
             <Image Name="Image_Test" Source="D:\Desktop\big\IMG_ (8).jpg">
             </Image>
-            
+
+            <sttplay:WPFSCPlayerPro x:Name="BackgroundPlayer" />
         </Grid>
     </Viewbox>
 </Window>
