@@ -24,6 +24,7 @@ using Modbus.Device;
 using System.Configuration;
 using System.Net.Sockets;
 using MediaPalyerPro.SpaceCG;
+using System.Net;
 
 namespace MediaPalyerPro
 {
@@ -54,9 +55,10 @@ namespace MediaPalyerPro
         private Grid ForegroundGroup;
         private Grid BackgroundGroup;
 
-        int port;
-        string address;
-        TcpClient ModbusTcpClient;
+        //int port;
+        //string address;
+        //TcpClient ModbusTcpClient;
+
         /// <summary>
         /// 当前线程同步上下文
         /// </summary>
@@ -66,10 +68,12 @@ namespace MediaPalyerPro
         /// 当前播放器
         /// </summary>
         private WPFSCPlayerPro CurrentPlayer;
+        HPSocket.Udp.UdpCast udpCast;
 
         public MainWindow()
         {
             InitializeComponent();
+
             InstanceExtensions.ChangeInstancePropertyValue(this, "Window.");
             this.Title = "Meida Player Pro " + (!String.IsNullOrWhiteSpace(this.Title) ? $"({this.Title})" : "");
 
@@ -113,6 +117,8 @@ namespace MediaPalyerPro
         {
             base.OnClosing(e);
 
+            udpCast?.Dispose();
+
             ForegroundPlayer.Pause();
             MiddlePlayer.Pause();
             BackgroundPlayer.Pause();
@@ -135,10 +141,12 @@ namespace MediaPalyerPro
             //BackgroundPlayer.ReleaseCore();
         }
 
+
         /// <inheritdoc/>
-        protected override void OnKeyDown(KeyEventArgs e)
+        protected override void OnKeyDown(KeyEventArgs e)        
         {
             base.OnKeyUp(e);
+            Console.WriteLine("MainWindow_KeyDown...");
             if (e.IsRepeat) return;
 
             TimerReset();
@@ -192,6 +200,10 @@ namespace MediaPalyerPro
                     this.Topmost = !this.Topmost;
                     break;
 
+                case Key.L:
+                    RootContainer.IsEnabled = !RootContainer.IsEnabled;
+                    break;
+
                 case Key.Down:
                 case Key.Right:
                     NextNode();
@@ -216,8 +228,43 @@ namespace MediaPalyerPro
         }
         #endregion
 
+        private HandleResult UdpCast_OnReceive(IClient sender, byte[] data)
+        {
+            bool enabled = data[data.Length - 1] >= 0x01;
+            Log.Info($"Udp Cast Remote Client: {sender.Address}  Enabled:{enabled}");
+
+            this.Dispatcher.InvokeAsync(() =>
+            {
+                RootContainer.IsEnabled = enabled;
+            });
+
+            return HandleResult.Ok;
+        }
+        private void RootContainer_IsEnabledChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            Image_Lock.Visibility = RootContainer.IsEnabled ? Visibility.Hidden : Visibility.Visible;
+        }
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
+            RootContainer.IsEnabledChanged += RootContainer_IsEnabledChanged;
+            Image_Lock.Width = 40;
+            Image_Lock.Height = 40;
+            RootContainer.IsEnabled = false;
+
+            try
+            {
+                udpCast = new HPSocket.Udp.UdpCast();
+                udpCast.Port = 21023;
+                udpCast.BindPort = 21023;
+                udpCast.OnReceive += UdpCast_OnReceive;
+                udpCast.CastMode = HPSocket.Udp.CastMode.Broadcast;
+                udpCast.Connect();
+            }
+            catch(Exception ex)
+            {
+                Log.Error(ex);
+            }
+
 #if false
             try
             {
@@ -271,6 +318,8 @@ namespace MediaPalyerPro
             //读取并播放列表文件
             LoadConfig(MEDIA_CONFIG_FILE);
         }
+
+
         private HandleResult OnModbusClientReceiveEventHandler(IClient sender, byte[] data)
         {
             string hex = "";

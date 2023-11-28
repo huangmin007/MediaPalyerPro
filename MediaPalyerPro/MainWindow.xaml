@@ -134,7 +134,12 @@
                     -->
                 </Canvas>
             </Grid>
-            
+
+            <Grid IsEnabled="False">
+                <Image Name="Image_Lock" Width="40" Height="40" Opacity="0.5" Stretch="Uniform" 
+                       HorizontalAlignment="Right" VerticalAlignment="Bottom" RenderOptions.BitmapScalingMode="NearestNeighbor"
+                   Source="pack://application:,,,/lock_0.png" Margin="0,0,10,10" />
+            </Grid>
             
         </Grid>
         

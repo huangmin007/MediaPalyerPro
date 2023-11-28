@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Xml.Linq;
@@ -10,6 +12,26 @@ namespace MediaPalyerPro
 {
     public partial class MainWindow : Window
     {
+
+        /// <summary>
+        /// 是否允许 Touch 功能
+        /// </summary>
+        /// <param name="enabled"></param>
+        public void EnabledTouch(bool enabled)
+        {
+            RootContainer.IsEnabled = enabled;
+
+            Task.Run(() =>
+            {
+                byte[] bytes = new byte[] { (byte)(enabled ? 0x01 : 0x00) };
+                for (int i = 0; i < 3; i++)
+                {
+                    udpCast?.Send(bytes, bytes.Length);
+                    Thread.Sleep(1000);
+                }
+            });
+        }
+
         /// <summary>
         /// 设置播放器音量
         /// </summary>

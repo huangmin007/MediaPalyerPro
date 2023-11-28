@@ -169,6 +169,7 @@
     <None Include="App.Config" />
   </ItemGroup>
   <ItemGroup>
+    <Resource Include="lock_0.png" />
     <Content Include="sccore.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
