@@ -18,13 +18,7 @@ using System.Text;
 using HPSocket;
 using SpaceCG.Generic;
 using SpaceCG.Log4Net.Controls;
-using System.Windows.Media;
 using System.Threading;
-using Modbus.Device;
-using System.Configuration;
-using System.Net.Sockets;
-using MediaPalyerPro.SpaceCG;
-using System.Net;
 
 namespace MediaPalyerPro
 {
@@ -264,7 +258,7 @@ namespace MediaPalyerPro
             {
                 Log.Error(ex);
             }
-
+            
 #if false
             try
             {
